@@ -275,15 +275,13 @@ function createShower() {
   shower.name = 'shower'
 
   const trayMat = mat(0xe8e4dc, { roughness: 0.4, metalness: 0.05 })
-  const glassMat = new THREE.MeshPhysicalMaterial({
+  const glassMat = new THREE.MeshStandardMaterial({
     color: 0xd8eef5,
     transparent: true,
-    opacity: 0.22,
-    roughness: 0.05,
-    metalness: 0,
-    transmission: 0.7,
-    thickness: 0.02,
-    side: THREE.DoubleSide,
+    opacity: 0.2,
+    roughness: 0.12,
+    metalness: 0.05,
+    depthWrite: false,
   })
   const chrome = mat(0xc8cdd2, { metalness: 0.85, roughness: 0.25 })
   const tile = mat(0xd0d8d4, { roughness: 0.55 })
@@ -568,12 +566,7 @@ function createBathroomCeilingLight() {
 
   const light = new THREE.PointLight(0xfff0dd, 1.15, 6.5, 1.6)
   light.position.y = -0.2
-  light.castShadow = true
-  light.shadow.mapSize.set(1024, 1024)
-  light.shadow.bias = -0.0004
-  light.shadow.normalBias = 0.03
-  light.shadow.camera.near = 0.1
-  light.shadow.camera.far = 7
+  light.castShadow = false
   light.name = 'bathroomLight'
   fixture.add(light)
 

@@ -93,15 +93,13 @@ function createWindow(wallMat, trimMat) {
   mullionH.position.set(0, winY, wallZ + 0.04)
   windowGroup.add(mullionH)
 
-  const glassMat = new THREE.MeshPhysicalMaterial({
+  const glassMat = new THREE.MeshStandardMaterial({
     color: 0xd8eaf5,
     transparent: true,
-    opacity: 0.2,
-    roughness: 0.05,
-    metalness: 0,
-    transmission: 0.75,
-    thickness: 0.04,
-    side: THREE.DoubleSide,
+    opacity: 0.18,
+    roughness: 0.12,
+    metalness: 0.05,
+    depthWrite: false,
   })
   const glass = new THREE.Mesh(new THREE.PlaneGeometry(winW - 0.08, winH - 0.08), glassMat)
   glass.position.set(0, winY, wallZ + 0.02)
@@ -369,15 +367,13 @@ function createSideWindow(wallMat, trimMat) {
   mullionH.position.set(wallX - 0.04, winY, winZ)
   group.add(mullionH)
 
-  const glassMat = new THREE.MeshPhysicalMaterial({
+  const glassMat = new THREE.MeshStandardMaterial({
     color: 0xd8eaf5,
     transparent: true,
-    opacity: 0.2,
-    roughness: 0.05,
-    metalness: 0,
-    transmission: 0.75,
-    thickness: 0.04,
-    side: THREE.DoubleSide,
+    opacity: 0.18,
+    roughness: 0.12,
+    metalness: 0.05,
+    depthWrite: false,
   })
   const glass = new THREE.Mesh(
     new THREE.PlaneGeometry(winW - 0.08, winH - 0.08),
@@ -425,6 +421,7 @@ function createSideWindow(wallMat, trimMat) {
 
   // Soft fill from the side window
   const glow = new THREE.PointLight(0xffc090, 0.55, 7, 2)
+  glow.castShadow = false
   glow.position.set(wallX - 0.5, winY, winZ)
   group.add(glow)
 

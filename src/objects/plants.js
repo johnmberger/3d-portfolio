@@ -139,7 +139,7 @@ function createMonsteraLeafGeometry() {
   return geometryFromSvg(MONSTERA_SVG, 'monstera', {
     curl: 0.55,
     tipLift: 0.08,
-    curveSegments: 24,
+    curveSegments: 12,
   })
 }
 
@@ -147,7 +147,7 @@ function createFiddleLeafGeometry() {
   return geometryFromShapeBuilder('fiddle', buildFiddleLeafShape, {
     curl: 0.35,
     tipLift: 0.04,
-    curveSegments: 28,
+    curveSegments: 14,
   })
 }
 
@@ -155,7 +155,7 @@ function createSnakeLeafGeometry() {
   return geometryFromShapeBuilder('snake', buildSnakeLeafShape, {
     curl: 0.15,
     tipLift: 0.02,
-    curveSegments: 16,
+    curveSegments: 8,
   })
 }
 
@@ -163,7 +163,7 @@ function createBirdLeafGeometry() {
   return geometryFromShapeBuilder('bird', buildBirdLeafShape, {
     curl: 0.45,
     tipLift: 0.1,
-    curveSegments: 24,
+    curveSegments: 12,
   })
 }
 
@@ -209,7 +209,7 @@ function createBladeLeaf(geometryFn, leafMat, veinMat, scale, bend = 0.1, {
   const blade = new THREE.Mesh(geometryFn(), leafMat)
   blade.scale.setScalar(scale)
   blade.castShadow = true
-  blade.receiveShadow = true
+  blade.receiveShadow = false
   blade.rotation.x = -bend
   leaf.add(blade)
 
@@ -221,6 +221,7 @@ function createBladeLeaf(geometryFn, leafMat, veinMat, scale, bend = 0.1, {
     )
     midrib.position.set(0, midribLen / 2, 0.01 * scale)
     midrib.rotation.x = -bend
+    midrib.castShadow = false
     leaf.add(midrib)
 
     if (lateralVeins) {
@@ -229,8 +230,6 @@ function createBladeLeaf(geometryFn, leafMat, veinMat, scale, bend = 0.1, {
         [1, 0.32, 0.2, -0.55],
         [-1, 0.52, 0.26, 0.7],
         [1, 0.52, 0.26, -0.7],
-        [-1, 0.7, 0.18, 0.85],
-        [1, 0.7, 0.18, -0.85],
       ]) {
         const vein = new THREE.Mesh(
           new THREE.CylinderGeometry(0.003 * scale, 0.004 * scale, len * scale, 4),
@@ -652,10 +651,10 @@ function createHangingPlanter({
   foliage.name = 'foliage'
   foliage.position.y = potY
 
-  for (let i = 0; i < 10; i++) {
-    const a = (i / 10) * Math.PI * 2 + 0.2
+  for (let i = 0; i < 7; i++) {
+    const a = (i / 7) * Math.PI * 2 + 0.2
     const trail = new THREE.Group()
-    const segments = 4 + (i % 3)
+    const segments = 3 + (i % 2)
     for (let s = 0; s < segments; s++) {
       const leaf = new THREE.Mesh(
         new THREE.PlaneGeometry(0.07 + (s % 2) * 0.02, 0.1),
@@ -669,15 +668,15 @@ function createHangingPlanter({
       leaf.rotation.y = a
       leaf.rotation.x = 0.4 + s * 0.15
       leaf.rotation.z = (i % 2 === 0 ? -0.2 : 0.2) + s * 0.05
-      leaf.castShadow = true
+      leaf.castShadow = false
       trail.add(leaf)
     }
     foliage.add(trail)
   }
 
   // A few upright leaves from the pot
-  for (let i = 0; i < 5; i++) {
-    const a = (i / 5) * Math.PI * 2
+  for (let i = 0; i < 4; i++) {
+    const a = (i / 4) * Math.PI * 2
     const upright = new THREE.Mesh(
       new THREE.PlaneGeometry(0.08, 0.16),
       i % 2 === 0 ? leafMat : leafMatAlt,
@@ -685,7 +684,7 @@ function createHangingPlanter({
     upright.position.set(Math.cos(a) * 0.04, 0.12, Math.sin(a) * 0.04)
     upright.rotation.y = a
     upright.rotation.x = -0.35
-    upright.castShadow = true
+    upright.castShadow = false
     foliage.add(upright)
   }
 
@@ -701,7 +700,7 @@ export function createPlants() {
   const monstera = createMonstera({
     potColor: 0xc4a484,
     height: 1.55,
-    leafCount: 8,
+    leafCount: 6,
     potScale: 1.15,
   })
   monstera.position.set(2.2, 0, -2.35)
@@ -710,7 +709,7 @@ export function createPlants() {
 
   const bird = createBirdOfParadise({
     potColor: 0xd4b896,
-    leafCount: 5,
+    leafCount: 4,
     potScale: 1.15,
   })
   bird.position.set(1.95, 0, -3.7)
@@ -720,7 +719,7 @@ export function createPlants() {
   // On the desk surface
   const deskSnake = createSnakePlant({
     potColor: 0x8f6b52,
-    leafCount: 5,
+    leafCount: 4,
     potScale: 0.45,
     height: 0.42,
   })
@@ -732,7 +731,7 @@ export function createPlants() {
   const fiddle = createFiddleLeafFig({
     potColor: 0xb08968,
     height: 1.35,
-    leafCount: 7,
+    leafCount: 5,
     potScale: 1.05,
   })
   fiddle.position.set(-3.6, 0, -2.15)
@@ -742,7 +741,7 @@ export function createPlants() {
   // By the kitchenette / entry — clear of the longer side run
   const snake = createSnakePlant({
     potColor: 0xcfc6b8,
-    leafCount: 8,
+    leafCount: 6,
     potScale: 0.95,
     height: 1.05,
   })
@@ -754,7 +753,7 @@ export function createPlants() {
   const miniMonstera = createMonstera({
     potColor: 0xa67c52,
     height: 0.85,
-    leafCount: 5,
+    leafCount: 4,
     potScale: 0.75,
   })
   miniMonstera.position.set(-3.85, 0, 2.95)
@@ -764,7 +763,7 @@ export function createPlants() {
   // Hanging planters — suspended near the window and lounge corners
   const hangA = createHangingPlanter({
     potColor: 0xb08968,
-    trailLength: 0.65,
+    trailLength: 0.55,
     cordLength: 0.5,
   })
   hangA.position.set(-2.15, 2.85, -4.15)
@@ -774,7 +773,7 @@ export function createPlants() {
     potColor: 0xc4a484,
     leafColor: 0x3d7a48,
     leafColorAlt: 0x2a6338,
-    trailLength: 0.5,
+    trailLength: 0.4,
     cordLength: 0.4,
   })
   hangB.position.set(2.0, 2.9, -4.15)
@@ -785,7 +784,7 @@ export function createPlants() {
     potColor: 0x8f6b52,
     leafColor: 0x4a6b3c,
     leafColorAlt: 0x3a5a32,
-    trailLength: 0.7,
+    trailLength: 0.55,
     cordLength: 0.55,
   })
   hangC.position.set(-3.9, 2.75, 0.35)
@@ -796,10 +795,14 @@ export function createPlants() {
 }
 
 export function updatePlants(plants, elapsed) {
-  plants.traverse((child) => {
-    if (child.name === 'foliage') {
-      child.rotation.z = Math.sin(elapsed * 0.7 + child.id) * 0.025
-      child.rotation.x = Math.cos(elapsed * 0.5 + child.id) * 0.015
-    }
-  })
+  if (!plants.userData.foliage) {
+    plants.userData.foliage = []
+    plants.traverse((child) => {
+      if (child.name === 'foliage') plants.userData.foliage.push(child)
+    })
+  }
+  for (const child of plants.userData.foliage) {
+    child.rotation.z = Math.sin(elapsed * 0.7 + child.id) * 0.025
+    child.rotation.x = Math.cos(elapsed * 0.5 + child.id) * 0.015
+  }
 }

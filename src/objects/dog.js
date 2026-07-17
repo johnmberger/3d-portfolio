@@ -87,14 +87,14 @@ export function createDog() {
         model.traverse((child) => {
           if (!child.isMesh) return
           child.castShadow = true
-          child.receiveShadow = true
+          child.receiveShadow = false
           if (child.material) {
             const mats = Array.isArray(child.material)
               ? child.material
               : [child.material]
             for (const m of mats) {
               if (m.map) m.map.colorSpace = THREE.SRGBColorSpace
-              m.side = THREE.DoubleSide
+              m.side = THREE.FrontSide
             }
           }
         })
@@ -128,7 +128,8 @@ export function createDog() {
 }
 
 export function updateDog(dog, elapsed) {
-  const body = dog.getObjectByName('dogBody')
+  const body = dog.userData.dogBody ?? dog.getObjectByName('dogBody')
+  dog.userData.dogBody = body
   if (!body) return
   body.position.y = Math.sin(elapsed * 1.2) * 0.004
   body.rotation.y = Math.sin(elapsed * 0.5) * 0.03

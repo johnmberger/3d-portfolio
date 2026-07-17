@@ -325,14 +325,13 @@ export function createTurntable() {
   const lid = markInteractive(
     new THREE.Mesh(
       new THREE.BoxGeometry(0.42, 0.008, 0.34),
-      new THREE.MeshPhysicalMaterial({
+      new THREE.MeshStandardMaterial({
         color: 0xb8c4cc,
         transparent: true,
-        opacity: 0.35,
-        roughness: 0.15,
+        opacity: 0.28,
+        roughness: 0.2,
         metalness: 0.05,
-        transmission: 0.4,
-        thickness: 0.02,
+        depthWrite: false,
       }),
     ),
   )
@@ -374,7 +373,8 @@ export function createTurntable() {
 }
 
 export function updateTurntable(turntable, elapsed, { focused = false } = {}) {
-  const screen = turntable.getObjectByName('screen')
+  const screen = turntable.userData.screen ?? turntable.getObjectByName('screen')
+  turntable.userData.screen = screen
   if (screen?.material) {
     screen.material.emissiveIntensity = focused
       ? 0.1
@@ -383,9 +383,14 @@ export function updateTurntable(turntable, elapsed, { focused = false } = {}) {
 
   if (focused) return
 
+  if (!turntable.userData.spinParts) {
+    turntable.userData.spinParts = ['platter', 'slipmat', 'deckVinyl', 'deckLabel']
+      .map((name) => turntable.getObjectByName(name))
+      .filter(Boolean)
+  }
+
   const spin = elapsed * 0.9
-  for (const name of ['platter', 'slipmat', 'deckVinyl', 'deckLabel']) {
-    const part = turntable.getObjectByName(name)
-    if (part) part.rotation.y = spin
+  for (const part of turntable.userData.spinParts) {
+    part.rotation.y = spin
   }
 }

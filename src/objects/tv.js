@@ -117,7 +117,8 @@ export function createTV() {
 }
 
 export function updateTV(tv, elapsed) {
-  const screen = tv.getObjectByName('tvScreen')
+  const screen = tv.userData.tvScreen ?? tv.getObjectByName('tvScreen')
+  tv.userData.tvScreen = screen
   if (screen?.material) {
     screen.material.emissiveIntensity = 0.32 + Math.sin(elapsed * 0.7) * 0.04
   }

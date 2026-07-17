@@ -4,7 +4,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js'
 import { createRoom, updateWindowParallax } from './objects/room.js'
 import { createPlants, updatePlants } from './objects/plants.js'
-import { createBicycle, updateBicycle } from './objects/bicycle.js'
+import { createBicycle } from './objects/bicycle.js'
 import { createMonitor, updateMonitor } from './objects/monitor.js'
 import { createDiningTable } from './objects/dining.js'
 import { createTurntable, updateTurntable } from './objects/turntable.js'
@@ -54,12 +54,18 @@ const exitBtn = document.querySelector('.exit-screen')
 const todBtn = document.querySelector('.tod-toggle')
 const hudActions = document.querySelector('.hud-actions')
 
+const isMobile =
+  window.matchMedia('(max-width: 900px), (pointer: coarse)').matches ||
+  (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4)
+const maxPixelRatio = isMobile ? 1.25 : 1.75
+
 const renderer = new THREE.WebGLRenderer({
   canvas,
-  antialias: true,
+  antialias: !isMobile,
   alpha: false,
+  powerPreference: 'high-performance',
 })
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, maxPixelRatio))
 renderer.setSize(window.innerWidth, window.innerHeight)
 renderer.shadowMap.enabled = true
 renderer.shadowMap.type = THREE.PCFShadowMap
@@ -102,7 +108,7 @@ sun.position.set(2.2, 3.5, -7)
 sun.target.position.set(0, 1, -0.8)
 scene.add(sun.target)
 sun.castShadow = true
-sun.shadow.mapSize.set(2048, 2048)
+sun.shadow.mapSize.set(isMobile ? 1024 : 1536, isMobile ? 1024 : 1536)
 sun.shadow.camera.near = 1
 sun.shadow.camera.far = 22
 sun.shadow.camera.left = -6.5
@@ -368,7 +374,7 @@ function onResize() {
   camera.aspect = w / h
   camera.updateProjectionMatrix()
   renderer.setSize(w, h)
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, maxPixelRatio))
   cssRenderer.setSize(w, h)
   rig.refocus()
 }
@@ -383,7 +389,6 @@ function tick(timestamp) {
   const delta = timer.getDelta()
 
   updatePlants(plants, elapsed)
-  updateBicycle(bicycle, elapsed)
   updateDog(dog, elapsed)
   updateWindowParallax(room, camera)
   timeOfDay.update(delta)
@@ -434,7 +439,10 @@ function tick(timestamp) {
 
   if (controls.enabled) controls.update()
   renderer.render(scene, camera)
-  cssRenderer.render(scene, camera)
+  // CSS3D is only needed while a screen UI is in play
+  if (focusing || portfolioUi.object.visible) {
+    cssRenderer.render(scene, camera)
+  }
 
   if (!loadingFinished) {
     loadingFinished = true

@@ -201,7 +201,8 @@ export function createKitchenette() {
         run.add(pull)
       }
 
-      const glow = new THREE.PointLight(0xfff0e0, 0.28, 2.8, 2)
+      const glow = new THREE.PointLight(0xfff0e0, 0.18, 2.4, 2)
+      glow.castShadow = false
       glow.position.set(0, upY - upH / 2 - 0.04, cabD * 0.65)
       run.add(glow)
     }

@@ -129,7 +129,8 @@ export function createMonitor() {
 }
 
 export function updateMonitor(monitor, elapsed, { focused = false } = {}) {
-  const screen = monitor.getObjectByName('screen')
+  const screen = monitor.userData.screen ?? monitor.getObjectByName('screen')
+  monitor.userData.screen = screen
   if (screen?.material) {
     screen.material.emissiveIntensity = focused
       ? 0.15

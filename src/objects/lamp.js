@@ -80,9 +80,8 @@ export function createFloorLamp() {
 
   const light = new THREE.PointLight(0xffd9a0, 1.1, 6, 2)
   light.position.set(0.22, 1.35, 0)
-  light.castShadow = true
-  light.shadow.mapSize.set(512, 512)
-  light.shadow.bias = -0.001
+  // Point-light shadows are cube maps — too expensive for this fill light
+  light.castShadow = false
   light.name = 'lampLight'
   group.add(light)
 
@@ -94,9 +93,12 @@ export function createFloorLamp() {
 }
 
 export function updateFloorLamp(lamp, { night = false } = {}) {
-  const light = lamp.getObjectByName('lampLight')
-  const bulb = lamp.getObjectByName('lampBulb')
-  const shade = lamp.getObjectByName('lampShade')
+  const light = lamp.userData.lampLight ?? lamp.getObjectByName('lampLight')
+  const bulb = lamp.userData.lampBulb ?? lamp.getObjectByName('lampBulb')
+  const shade = lamp.userData.lampShade ?? lamp.getObjectByName('lampShade')
+  lamp.userData.lampLight = light
+  lamp.userData.lampBulb = bulb
+  lamp.userData.lampShade = shade
 
   if (light) light.intensity = night ? 1.85 : 0.55
   if (bulb?.material) bulb.material.emissiveIntensity = night ? 1.8 : 0.6

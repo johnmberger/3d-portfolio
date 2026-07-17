@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Studio — Portfolio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Sans+3:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="webgl"></canvas>
+      <header class="hud">
+        <p class="brand">Studio</p>
+        <p class="hint">Drag to look · Scroll to zoom · Click monitor, turntable, or bathroom</p>
+      </header>
+      <div class="hud-actions">
+        <button class="tod-toggle" type="button" aria-label="Switch to night">Night</button>
+      </div>
+      <button class="exit-screen" type="button" hidden>Back to room</button>
+      <footer class="credits">
+        <p>
+          Shiba by
+          <a
+            href="https://sketchfab.com/3d-models/shiba-faef9fe5ace445e7b2989d1c1ece361c"
+            target="_blank"
+            rel="noreferrer"
+            >zixisun02</a
+          >
+          ·
+          <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer"
+            >CC BY 4.0</a
+          >
+          · Bike by
+          <a href="https://poly.pizza/m/19VoUuA2pcN" target="_blank" rel="noreferrer"
+            >Poly by Google</a
+          >
+          ·
+          <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noreferrer"
+            >CC BY 3.0</a
+          >
+          · Food by
+          <a href="https://quaternius.com/packs/ultimatefood.html" target="_blank" rel="noreferrer"
+            >Quaternius</a
+          >
+          (CC0)
+        </p>
+      </footer>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

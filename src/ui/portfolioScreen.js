@@ -41,6 +41,7 @@ export function createPortfolioScreen(monitor) {
 
   let started = false
   let ready = false
+  let warmIframe = null
 
   iframe.addEventListener('load', () => {
     if (!iframe.getAttribute('src')) return
@@ -61,8 +62,39 @@ export function createPortfolioScreen(monitor) {
     iframe.src = RESUME_URL
   }
 
-  /** Warm the iframe after the room has had time to render. */
+  /**
+   * Warm the resume early. CSS3D keeps the monitor iframe at display:none until
+   * focus, which browsers often refuse to load — so we also spin up an offscreen
+   * iframe (and a prefetch hint) that can actually fetch.
+   */
   function preload() {
+    if (!document.querySelector(`link[data-resume-prefetch]`)) {
+      const link = document.createElement('link')
+      link.rel = 'prefetch'
+      link.href = RESUME_URL
+      link.dataset.resumePrefetch = '1'
+      document.head.appendChild(link)
+    }
+
+    if (!warmIframe) {
+      warmIframe = document.createElement('iframe')
+      warmIframe.src = RESUME_URL
+      warmIframe.title = 'Resume preload'
+      warmIframe.setAttribute('aria-hidden', 'true')
+      warmIframe.tabIndex = -1
+      Object.assign(warmIframe.style, {
+        position: 'fixed',
+        width: '1px',
+        height: '1px',
+        left: '-100vw',
+        top: '0',
+        opacity: '0',
+        pointerEvents: 'none',
+        border: '0',
+      })
+      document.body.appendChild(warmIframe)
+    }
+
     const schedule =
       typeof requestIdleCallback === 'function'
         ? (cb) => requestIdleCallback(cb, { timeout: PRELOAD_DELAY_MS + 1200 })
@@ -79,7 +111,7 @@ export function createPortfolioScreen(monitor) {
 
   /** Keep the iframe warm; visibility is handled by updatePortfolioVisibility. */
   function hide() {
-    // no-op — monitor wallpaper stays loaded
+    // no-op — resume stays loaded for the next focus
   }
 
   return { element, object, closeBtn, preload, show, hide }

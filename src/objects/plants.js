@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import { SVGLoader } from 'three/addons/loaders/SVGLoader.js'
-import { WALL_POS } from './roomConstants.js'
+import { WALL_H, WALL_POS } from './roomConstants.js'
 
 const geoCache = new Map()
 
@@ -1227,7 +1227,19 @@ function createHangingPlanter({
     side: THREE.DoubleSide,
   })
 
-  // Ceiling hook
+  // Ceiling rose + hook so the planter reads as mounted, not floating
+  const mountPlate = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.045, 0.05, 0.014, 16),
+    new THREE.MeshStandardMaterial({
+      color: 0xc8cdd2,
+      metalness: 0.55,
+      roughness: 0.4,
+    }),
+  )
+  mountPlate.position.y = 0.006
+  mountPlate.castShadow = true
+  plant.add(mountPlate)
+
   const hook = new THREE.Mesh(
     new THREE.TorusGeometry(0.025, 0.006, 8, 16),
     new THREE.MeshStandardMaterial({
@@ -1237,7 +1249,7 @@ function createHangingPlanter({
     }),
   )
   hook.rotation.x = Math.PI / 2
-  hook.position.y = 0
+  hook.position.y = -0.018
   plant.add(hook)
 
   const potY = -cordLength - 0.04
@@ -1245,7 +1257,7 @@ function createHangingPlanter({
   const rimAttachR = 0.092
 
   // Three cords converge at the hook and splay to the pot rim
-  const cordTop = new THREE.Vector3(0, -0.012, 0)
+  const cordTop = new THREE.Vector3(0, -0.03, 0)
   const yAxis = new THREE.Vector3(0, 1, 0)
   for (let i = 0; i < 3; i++) {
     const a = (i / 3) * Math.PI * 2 + 0.15
@@ -1440,13 +1452,16 @@ export function createPlants() {
   stereoCactus.rotation.y = 1.15
   group.add(stereoCactus)
 
-  // Hanging planters — pulled off the walls so trailing leaves don’t clip
+  // Hanging planters — ceiling-mounted in the back corners flanking the window
+  const ceilingY = WALL_H - 0.01
+  const cornerInset = 0.42
+
   const hangA = createHangingPlanter({
     potColor: 0xc4683a,
     trailLength: 0.55,
-    cordLength: 0.5,
+    cordLength: 0.55,
   })
-  hangA.position.set(-2.15, 3.55, -3.55)
+  hangA.position.set(-(WALL_POS - cornerInset), ceilingY, -(WALL_POS - cornerInset))
   group.add(hangA)
 
   const hangB = createHangingPlanter({
@@ -1454,9 +1469,9 @@ export function createPlants() {
     leafColor: 0x3d7a48,
     leafColorAlt: 0x2a6338,
     trailLength: 0.4,
-    cordLength: 0.4,
+    cordLength: 0.5,
   })
-  hangB.position.set(2.0, 3.6, -3.55)
+  hangB.position.set(WALL_POS - cornerInset, ceilingY, -(WALL_POS - cornerInset))
   hangB.rotation.y = 0.6
   group.add(hangB)
 
@@ -1467,8 +1482,8 @@ export function createPlants() {
     trailLength: 0.55,
     cordLength: 0.55,
   })
-  // Front-left corner (−X / +Z) — inset from both walls
-  hangC.position.set(-3.55, 3.5, 3.55)
+  // Front-left corner (−X / +Z) — ceiling-mounted
+  hangC.position.set(-(WALL_POS - cornerInset), ceilingY, WALL_POS - cornerInset)
   hangC.rotation.y = 1.1
   group.add(hangC)
 

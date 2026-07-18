@@ -29,37 +29,47 @@
         place-items: center;
         margin: 0;
         background:
-          radial-gradient(ellipse at 30% 20%, #e8d0b0 0%, transparent 50%),
-          radial-gradient(ellipse at 70% 80%, #c45a6a33 0%, transparent 45%),
-          linear-gradient(160deg, #d4c4b0 0%, #c4a890 100%);
+          radial-gradient(ellipse 80% 55% at 50% 0%, #ead8c0 0%, transparent 55%),
+          radial-gradient(ellipse 70% 50% at 85% 100%, #c9a88255 0%, transparent 50%),
+          linear-gradient(165deg, #d8c8b4 0%, #c4b09a 100%);
         color: #1c2420;
         font-family: Georgia, "Times New Roman", serif;
       }
       .loading-screen__inner {
         text-align: center;
         padding: 2rem;
+        max-width: 22rem;
+      }
+      .loading-screen__eyebrow {
+        margin: 0 0 1rem;
+        font-family: system-ui, sans-serif;
+        font-size: 0.72rem;
+        font-weight: 500;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: rgba(28, 36, 32, 0.45);
       }
       .loading-screen__brand {
         margin: 0;
+        font-family: "Fraunces", Georgia, "Times New Roman", serif;
         font-weight: 600;
-        font-size: clamp(2.5rem, 7vw, 4rem);
-        letter-spacing: -0.03em;
-        line-height: 1;
+        font-size: clamp(2.6rem, 8vw, 4.25rem);
+        letter-spacing: -0.035em;
+        line-height: 0.95;
       }
       .loading-screen__status {
-        margin: 0.85rem 0 0;
+        margin: 1.1rem 0 0;
         font-family: system-ui, sans-serif;
-        font-size: 0.95rem;
-        color: rgba(28, 36, 32, 0.55);
-        letter-spacing: 0.02em;
+        font-size: 0.92rem;
+        color: rgba(28, 36, 32, 0.5);
+        letter-spacing: 0.01em;
       }
       .loading-screen__bar {
-        width: min(12rem, 50vw);
-        height: 2px;
-        margin: 1.6rem auto 0;
-        background: rgba(28, 36, 32, 0.12);
+        width: min(10rem, 42vw);
+        height: 1.5px;
+        margin: 1.75rem auto 0;
+        background: rgba(28, 36, 32, 0.14);
         overflow: hidden;
-        border-radius: 1px;
       }
       .loading-screen__bar-fill {
         display: block;
@@ -75,7 +85,7 @@
     <link rel="preconnect" href="https://johnmberger.com" crossorigin />
     <link rel="prefetch" href="https://johnmberger.com/resume/" />
     <link
-      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Sans+3:wght@400;500&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Sans+3:wght@400;500&display=optional"
       rel="stylesheet"
     />
   </head>
@@ -87,8 +97,9 @@
       aria-live="polite"
     >
       <div class="loading-screen__inner">
-        <p class="loading-screen__brand">John's Studio.</p>
-        <p class="loading-screen__status">Opening the room…</p>
+        <p class="loading-screen__eyebrow">Make yourself at home</p>
+        <p class="loading-screen__brand">John's Studio</p>
+        <p class="loading-screen__status">Opening the door…</p>
         <div class="loading-screen__bar" aria-hidden="true">
           <span class="loading-screen__bar-fill"></span>
         </div>
@@ -97,7 +108,7 @@
     <div id="app">
       <canvas id="webgl"></canvas>
       <header class="hud">
-        <p class="brand">John's Studio.</p>
+        <p class="brand">John's Studio</p>
         <p class="hint">Drag to look · Scroll to zoom</p>
       </header>
       <div class="hud-actions">

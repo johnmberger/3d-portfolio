@@ -12,8 +12,9 @@ export function createLoadingScreen(root = document.body) {
     el.setAttribute('aria-live', 'polite')
     el.innerHTML = `
       <div class="loading-screen__inner">
-        <p class="loading-screen__brand">John's Studio.</p>
-        <p class="loading-screen__status">Opening the room…</p>
+        <p class="loading-screen__eyebrow">Make yourself at home</p>
+        <p class="loading-screen__brand">John's Studio</p>
+        <p class="loading-screen__status">Opening the door…</p>
         <div class="loading-screen__bar" aria-hidden="true">
           <span class="loading-screen__bar-fill"></span>
         </div>
@@ -38,7 +39,7 @@ export function createLoadingScreen(root = document.body) {
   function dismiss() {
     if (done) return Promise.resolve()
     done = true
-    setProgress(1, 'Welcome in')
+    setProgress(1, 'Come in')
     document.body.classList.add('is-app-ready')
     el.classList.add('is-done')
     return new Promise((resolve) => {

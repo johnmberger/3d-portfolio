@@ -27,6 +27,10 @@ body,
   background: #d4c4b0;
 }
 
+#app {
+  opacity: 0;
+}
+
 body.is-app-ready #app {
   opacity: 1;
 }
@@ -322,6 +326,10 @@ body.is-app-ready #app {
 
 /* —— Loading screen —— */
 
+/* —— Loading screen ——
+   Layout/visuals must match the critical <style> in index.html.
+   No entrance animations here — they would restart when this file loads and flash. */
+
 .loading-screen {
   position: fixed;
   inset: 0;
@@ -329,9 +337,9 @@ body.is-app-ready #app {
   display: grid;
   place-items: center;
   background:
-    radial-gradient(ellipse at 30% 20%, #e8d0b0 0%, transparent 50%),
-    radial-gradient(ellipse at 70% 80%, #c45a6a33 0%, transparent 45%),
-    linear-gradient(160deg, #d4c4b0 0%, #c4a890 100%);
+    radial-gradient(ellipse 80% 55% at 50% 0%, #ead8c0 0%, transparent 55%),
+    radial-gradient(ellipse 70% 50% at 85% 100%, #c9a88255 0%, transparent 50%),
+    linear-gradient(165deg, #d8c8b4 0%, #c4b09a 100%);
   color: var(--ink);
   opacity: 1;
   transition: opacity 0.55s ease;
@@ -345,34 +353,43 @@ body.is-app-ready #app {
 .loading-screen__inner {
   text-align: center;
   padding: 2rem;
+  max-width: 22rem;
+}
+
+.loading-screen__eyebrow {
+  margin: 0 0 1rem;
+  font-family: "Source Sans 3", system-ui, sans-serif;
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--hint);
 }
 
 .loading-screen__brand {
+  margin: 0;
   font-family: "Fraunces", Georgia, serif;
   font-optical-sizing: auto;
   font-weight: 600;
-  font-size: clamp(2.5rem, 7vw, 4rem);
-  letter-spacing: -0.03em;
-  line-height: 1;
-  animation: loading-brand 1.2s ease both;
+  font-size: clamp(2.6rem, 8vw, 4.25rem);
+  letter-spacing: -0.035em;
+  line-height: 0.95;
 }
 
 .loading-screen__status {
-  margin-top: 0.85rem;
+  margin: 1.1rem 0 0;
   font-family: "Source Sans 3", system-ui, sans-serif;
-  font-size: 0.95rem;
+  font-size: 0.92rem;
   color: var(--hint);
-  letter-spacing: 0.02em;
-  animation: loading-brand 1.2s ease 0.12s both;
+  letter-spacing: 0.01em;
 }
 
 .loading-screen__bar {
-  width: min(12rem, 50vw);
-  height: 2px;
-  margin: 1.6rem auto 0;
-  background: rgba(28, 36, 32, 0.12);
+  width: min(10rem, 42vw);
+  height: 1.5px;
+  margin: 1.75rem auto 0;
+  background: rgba(28, 36, 32, 0.14);
   overflow: hidden;
-  border-radius: 1px;
 }
 
 .loading-screen__bar-fill {
@@ -380,20 +397,9 @@ body.is-app-ready #app {
   width: 100%;
   height: 100%;
   background: var(--ink);
-  transform: scaleX(0);
+  transform: scaleX(0.08);
   transform-origin: left center;
   transition: transform 0.35s ease;
-}
-
-@keyframes loading-brand {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 /* —— Portfolio / resume screen (CSS3D iframe on the monitor) —— */

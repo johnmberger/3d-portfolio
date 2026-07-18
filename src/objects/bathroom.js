@@ -661,6 +661,88 @@ function createTowelBar() {
   return bar
 }
 
+/** Cool ceramic floor tiles — albedo + roughness canvases. */
+function createBathFloorMaps() {
+  const size = 512
+  const tiles = 8
+  const cell = size / tiles
+  const grout = 3
+
+  const color = document.createElement('canvas')
+  color.width = size
+  color.height = size
+  const ctx = color.getContext('2d')
+
+  const rough = document.createElement('canvas')
+  rough.width = size
+  rough.height = size
+  const rctx = rough.getContext('2d')
+
+  // Grout base
+  ctx.fillStyle = '#9aa4a0'
+  ctx.fillRect(0, 0, size, size)
+  rctx.fillStyle = '#b0b0b0'
+  rctx.fillRect(0, 0, size, size)
+
+  const tones = [
+    [210, 216, 212],
+    [200, 208, 204],
+    [218, 222, 218],
+    [192, 200, 196],
+    [206, 214, 210],
+  ]
+
+  for (let ty = 0; ty < tiles; ty++) {
+    for (let tx = 0; tx < tiles; tx++) {
+      const [br, bg, bb] = tones[(tx * 3 + ty * 5) % tones.length]
+      const shade = 0.94 + (((tx * 17 + ty * 13) % 9) * 0.012)
+      const x = tx * cell + grout
+      const y = ty * cell + grout
+      const w = cell - grout * 2
+      const h = cell - grout * 2
+
+      ctx.fillStyle = `rgb(${(br * shade) | 0},${(bg * shade) | 0},${(bb * shade) | 0})`
+      ctx.fillRect(x, y, w, h)
+
+      // Soft ceramic mottling
+      for (let i = 0; i < 28; i++) {
+        const a = 0.03 + Math.random() * 0.05
+        ctx.fillStyle =
+          Math.random() > 0.5 ? `rgba(255,255,255,${a})` : `rgba(60,70,65,${a})`
+        ctx.fillRect(
+          x + Math.random() * w,
+          y + Math.random() * h,
+          1 + Math.random() * 2.5,
+          1 + Math.random() * 2.5,
+        )
+      }
+
+      // Slight edge bevel highlight
+      ctx.strokeStyle = 'rgba(255,255,255,0.18)'
+      ctx.lineWidth = 1
+      ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1)
+
+      // Tile faces smoother than grout
+      rctx.fillStyle = '#e8e8e8'
+      rctx.fillRect(x, y, w, h)
+      rctx.fillStyle = '#9a9a9a'
+      rctx.fillRect(tx * cell, ty * cell, cell, grout)
+      rctx.fillRect(tx * cell, ty * cell, grout, cell)
+    }
+  }
+
+  const map = new THREE.CanvasTexture(color)
+  map.colorSpace = THREE.SRGBColorSpace
+  map.wrapS = map.wrapT = THREE.RepeatWrapping
+  map.anisotropy = 8
+
+  const roughnessMap = new THREE.CanvasTexture(rough)
+  roughnessMap.wrapS = roughnessMap.wrapT = THREE.RepeatWrapping
+  roughnessMap.anisotropy = 4
+
+  return { map, roughnessMap }
+}
+
 function createBathroomCeilingLight() {
   const fixture = new THREE.Group()
   fixture.name = 'bathroomCeilingLight'
@@ -711,22 +793,30 @@ export function createBathroom() {
     metalness: 0,
   })
   wallMat.shadowSide = THREE.DoubleSide
-  const floorMat = new THREE.MeshStandardMaterial({
-    color: 0xb8956c,
-    roughness: 0.85,
-    metalness: 0.05,
-  })
-  const trim = new THREE.MeshStandardMaterial({
-    color: 0x8a7355,
-    roughness: 0.7,
-    metalness: 0.05,
-  })
 
   const roomW = 3.3
   const roomD = 3.2
   // Match living-room wall height so the far wall reads congruent through the doorway
   const wallH = WALL_H
   const wallT = 0.1
+
+  const floorMaps = createBathFloorMaps()
+  // ~0.28m tiles across the bathroom footprint
+  const tileRepeatX = roomW / 0.28
+  const tileRepeatZ = roomD / 0.28
+  floorMaps.map.repeat.set(tileRepeatX, tileRepeatZ)
+  floorMaps.roughnessMap.repeat.set(tileRepeatX, tileRepeatZ)
+  const floorMat = new THREE.MeshStandardMaterial({
+    map: floorMaps.map,
+    roughnessMap: floorMaps.roughnessMap,
+    roughness: 0.72,
+    metalness: 0.04,
+  })
+  const trim = new THREE.MeshStandardMaterial({
+    color: 0x8a7355,
+    roughness: 0.7,
+    metalness: 0.05,
+  })
 
   const floor = markStructure(
     new THREE.Mesh(new THREE.PlaneGeometry(roomW, roomD), floorMat),

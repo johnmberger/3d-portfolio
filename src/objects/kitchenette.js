@@ -116,6 +116,71 @@ function createCuttingBoard({ boardMat, knifeMat, handleMat }) {
   return g
 }
 
+/** Decorative ceramics for the top of the upper cabinets. */
+function createVase({
+  color = 0xe8e0d4,
+  style = 'bottle',
+  scale = 1,
+} = {}) {
+  const vase = new THREE.Group()
+  vase.name = 'cabinetVase'
+
+  // Profiles as [radius, height] — lathed into a solid of revolution
+  const profiles = {
+    bottle: [
+      [0.001, 0],
+      [0.055, 0],
+      [0.062, 0.04],
+      [0.058, 0.12],
+      [0.048, 0.2],
+      [0.032, 0.28],
+      [0.026, 0.34],
+      [0.028, 0.37],
+      [0.036, 0.385],
+      [0.034, 0.392],
+    ],
+    bulb: [
+      [0.001, 0],
+      [0.07, 0],
+      [0.095, 0.06],
+      [0.1, 0.13],
+      [0.088, 0.2],
+      [0.055, 0.24],
+      [0.038, 0.26],
+      [0.042, 0.275],
+      [0.04, 0.282],
+    ],
+    cylinder: [
+      [0.001, 0],
+      [0.068, 0],
+      [0.072, 0.03],
+      [0.07, 0.16],
+      [0.068, 0.2],
+      [0.074, 0.215],
+      [0.07, 0.222],
+    ],
+  }
+
+  const pts = (profiles[style] || profiles.bottle).map(
+    ([r, y]) => new THREE.Vector2(r * scale, y * scale),
+  )
+  const geo = new THREE.LatheGeometry(pts, 28)
+  geo.computeVertexNormals()
+
+  const ceramic = new THREE.MeshStandardMaterial({
+    color,
+    roughness: 0.42,
+    metalness: 0.04,
+  })
+
+  const body = new THREE.Mesh(geo, ceramic)
+  body.castShadow = true
+  body.receiveShadow = true
+  vase.add(body)
+
+  return vase
+}
+
 function createFridge({ handle, kickMat }) {
   const fridge = new THREE.Group()
   fridge.name = 'fridge'
@@ -410,6 +475,33 @@ export function createKitchenette() {
   board.position.set(cabD * 0.5, counterY, cabD + 0.85)
   board.rotation.y = Math.PI / 2
   group.add(board)
+
+  // Ceramics on top of the upper cabinets
+  const cabinetTopY = upY + upH / 2 - 0.002
+
+  const tallVase = createVase({
+    color: 0xd4cbc0,
+    style: 'bottle',
+    scale: 1.15,
+  })
+  tallVase.position.set(cabD + 0.4, cabinetTopY, upD * 0.48)
+  group.add(tallVase)
+
+  const roundVase = createVase({
+    color: 0xa87858,
+    style: 'bulb',
+    scale: 1.2,
+  })
+  roundVase.position.set(upD * 0.48, cabinetTopY, cabD + 0.55)
+  group.add(roundVase)
+
+  const shortVase = createVase({
+    color: 0xe8e4dc,
+    style: 'cylinder',
+    scale: 1.15,
+  })
+  shortVase.position.set(upD * 0.48, cabinetTopY, cabD + 1.35)
+  group.add(shortVase)
 
   // —— Fridge beyond the side run ——
   const fridge = createFridge({

@@ -352,6 +352,66 @@ function createElectricBassMount() {
   return { mount, ready }
 }
 
+/** Warm picture light above the instruments, washing the vinyl credenza below. */
+function createVinylWallLight() {
+  const fixture = new THREE.Group()
+  fixture.name = 'vinylWallLight'
+
+  const brass = mat(0xb8975a, { roughness: 0.35, metalness: 0.72 })
+  const brassDark = mat(0x8a6e40, { roughness: 0.4, metalness: 0.65 })
+  const glowMat = new THREE.MeshStandardMaterial({
+    color: 0xfff0d8,
+    emissive: 0xffd9a0,
+    emissiveIntensity: 0.55,
+    roughness: 0.45,
+    metalness: 0.05,
+  })
+
+  // Flush backplate on the −Z wall
+  const plate = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.08, 0.02), brassDark)
+  plate.position.z = 0.01
+  plate.castShadow = true
+  fixture.add(plate)
+
+  // Arm out into the room
+  const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.14, 10), brass)
+  arm.rotation.x = Math.PI / 2
+  arm.position.set(0, 0, 0.09)
+  arm.castShadow = true
+  fixture.add(arm)
+
+  // Hooded shade aimed downward
+  const shade = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.045, 0.07, 0.055, 16, 1, true),
+    brass,
+  )
+  shade.position.set(0, -0.02, 0.16)
+  shade.castShadow = true
+  fixture.add(shade)
+
+  const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.022, 12, 10), glowMat)
+  bulb.position.set(0, -0.012, 0.16)
+  fixture.add(bulb)
+
+  // Soft fill near the fixture
+  const fill = new THREE.PointLight(0xffd9a0, 0.35, 2.8, 2)
+  fill.position.set(0, -0.05, 0.18)
+  fixture.add(fill)
+
+  // Main wash onto the credenza top
+  const spot = new THREE.SpotLight(0xffe2b8, 2.4, 4.5, Math.PI / 5, 0.45, 1.4)
+  spot.position.set(0, -0.04, 0.17)
+  spot.castShadow = false
+  fixture.add(spot)
+
+  const target = new THREE.Object3D()
+  target.position.set(0, -1.55, 0.55)
+  fixture.add(target)
+  spot.target = target
+
+  return fixture
+}
+
 /**
  * Acoustic, electric bass (GLB), and ukulele hung on the back wall above the vinyl cabinet.
  */
@@ -377,6 +437,11 @@ export function createWallInstruments() {
   })
   acoustic.name = 'acousticMount'
   group.add(acoustic)
+
+  // Centered over the instrument trio / vinyl run
+  const wallLight = createVinylWallLight()
+  wallLight.position.set(-3.25, 2.58, -(WALL_POS - 0.04))
+  group.add(wallLight)
 
   return { group, ready: bassReady }
 }

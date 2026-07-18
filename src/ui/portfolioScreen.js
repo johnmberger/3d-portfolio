@@ -50,6 +50,7 @@ export function createPortfolioScreen(monitor) {
 
   // 850×480 px → scale 0.001 matches the 0.85×0.48 screen plane
   const object = new CSS3DObject(element)
+  object.visible = false
   object.position.set(0, 0.42, 0.032)
   object.scale.set(0.001, 0.001, 0.001)
   monitor.add(object)
@@ -84,12 +85,12 @@ export function createPortfolioScreen(monitor) {
   return { element, object, closeBtn, preload, show, hide }
 }
 
-/** CSS3D ignores WebGL depth — hide when behind the screen, or while the camera is mid-transition. */
+/** CSS3D ignores WebGL depth — only show once focused (not mid-zoom), and not from behind. */
 export function updatePortfolioVisibility(
   { object },
   camera,
   screenMesh,
-  { active = true } = {},
+  { active = false } = {},
 ) {
   if (!active) {
     object.visible = false
@@ -102,7 +103,7 @@ export function updatePortfolioVisibility(
   _screenNormal.set(0, 0, 1).transformDirection(screenMesh.matrixWorld)
   _toCamera.subVectors(camera.position, _screenPos)
   object.visible = _toCamera.dot(_screenNormal) > 0.02
-  if (!object.visible) object.element.style.display = 'none'
+  object.element.style.display = object.visible ? '' : 'none'
 }
 
 export function createCSS3DRenderer(container) {

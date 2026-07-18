@@ -42,12 +42,10 @@ import {
 } from './ui/poopyhoochScreen.js'
 import { createFocusHelper } from './ui/focusHelper.js'
 import { createLoadingScreen } from './ui/loadingScreen.js'
-import { RESUME_URL } from './resumeUrl.js'
 
 RectAreaLightUniformsLib.init()
 
-const EXPLORE_HINT =
-  'Drag to look · Scroll to zoom · Click monitor, turntable, bathroom, or credits'
+const EXPLORE_HINT = 'Drag to look · Scroll to zoom'
 
 const loading = createLoadingScreen(document.body)
 loading.setProgress(0.15, 'Building the room…')
@@ -93,11 +91,11 @@ const camera = new THREE.PerspectiveCamera(
   0.1,
   80,
 )
-// Hero view: sectional + coffee table readable, room fills the frame
-camera.position.set(-0.4, 1.6, 3.55)
+// Start in the kitchen corner (+X / +Z), looking toward the opposite corner (−X / −Z)
+camera.position.set(3.35, 1.55, 3.4)
 
 const controls = new OrbitControls(camera, canvas)
-controls.target.set(0.1, 0.7, 0.35)
+controls.target.set(-2.15, 0.95, -2.2)
 controls.enableDamping = true
 controls.dampingFactor = 0.06
 controls.enablePan = true
@@ -276,13 +274,6 @@ function openPortfolio() {
   hoverHighlight.clear()
   activeFocus = 'portfolio'
   portfolioUi.show()
-  focusHelper.show({
-    title: 'Resume',
-    blurb: 'John Berger — software engineer.',
-    href: RESUME_URL,
-    anchor: monitorScreen,
-    width: 0.85,
-  })
   rig.enterFocus(monitorScreen, { width: 0.85, height: 0.48, fill: 0.94 })
   setHint('Reading the resume…')
 }
@@ -381,11 +372,6 @@ canvas.addEventListener('pointermove', (event) => {
   hoverTarget = pickInteractive(event.clientX, event.clientY)
   hoverHighlight.set(hoverTarget ? interactiveRoots[hoverTarget] : null)
   setPointer(Boolean(hoverTarget))
-  if (hoverTarget === 'monitor') setHint('Click to open resume')
-  else if (hoverTarget === 'turntable') setHint('Click to open Earworms')
-  else if (hoverTarget === 'bathroom') setHint('Click to open Poop the Hooch')
-  else if (hoverTarget === 'credits') setHint('Click to read credits')
-  else setHint(EXPLORE_HINT)
 })
 
 canvas.addEventListener('pointerdown', (event) => {
@@ -490,8 +476,7 @@ function tick(timestamp) {
   // CSS3D ignores WebGL depth — keep overlays off while the camera is moving so
   // room objects (lamps, furniture) correctly occlude the WebGL stand-ins.
   updatePortfolioVisibility(portfolioUi, camera, monitorScreen, {
-    active:
-      mode === 'explore' || (rig.isFocused && activeFocus === 'portfolio'),
+    active: rig.isFocused && activeFocus === 'portfolio',
   })
   updateEarwormsVisibility(earwormsUi, camera, earwormsScreen, {
     active: rig.isFocused && activeFocus === 'earworms',

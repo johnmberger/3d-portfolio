@@ -12,7 +12,6 @@ export function createLoadingScreen(root = document.body) {
     el.setAttribute('aria-live', 'polite')
     el.innerHTML = `
       <div class="loading-screen__inner">
-        <p class="loading-screen__eyebrow">Make yourself at home</p>
         <p class="loading-screen__brand">John's Studio</p>
         <p class="loading-screen__status">Opening the door…</p>
         <div class="loading-screen__bar" aria-hidden="true">

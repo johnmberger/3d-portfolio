@@ -1,4 +1,5 @@
 import './style.css'
+import { inject } from '@vercel/analytics'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js'
@@ -47,6 +48,8 @@ import { createTvNewsScreen } from './ui/tvNewsScreen.js'
 import { createFocusHelper } from './ui/focusHelper.js'
 import { createFocusClose } from './ui/focusClose.js'
 import { createLoadingScreen } from './ui/loadingScreen.js'
+
+inject()
 
 RectAreaLightUniformsLib.init()
 

@@ -4,7 +4,7 @@ const W = 960
 const H = 540
 const TICKER_H = 44
 const TICKER_TEXT =
-  'Coming up: résumé on the desk · vinyl on the wall · good boy on the rug · '
+  'Coming up: résumé on the desk · records on the turntable · good boy on the rug · '
 const TICKER_SPEED = 55 // px / sec
 
 /**
@@ -96,7 +96,7 @@ export function createTvNewsScreen(tv) {
     ctx.font = '500 20px "Source Sans 3", system-ui, sans-serif'
     wrapText(
       ctx,
-      "John's Studio is a walkable 3D portfolio inspired by my actual Atlanta apartment — the desk where I ship code, the vinyl wall, the couch, the dog.",
+      "John's Studio is a walkable 3D portfolio inspired by my actual Atlanta apartment — the desk where I ship code, the turntable, the couch, the dog.",
       28,
       220,
       W - 56,

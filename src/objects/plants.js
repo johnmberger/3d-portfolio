@@ -326,6 +326,191 @@ function leafMaterials(leafColor, leafColorAlt, veinColor = 0x1e4a28) {
   return { leafMat, leafMatAlt, veinMat, stemMat }
 }
 
+// —— ZZ plant (Zamioculcas) ——
+
+/** Fleshy oval leaflet — rounded, slightly pointed tip. */
+function buildZZLeafletShape() {
+  const s = new THREE.Shape()
+  s.moveTo(0, 0)
+  s.bezierCurveTo(-0.08, 0.02, -0.16, 0.18, -0.15, 0.4)
+  s.bezierCurveTo(-0.14, 0.62, -0.08, 0.82, -0.03, 0.94)
+  s.bezierCurveTo(-0.01, 0.99, 0, 1.02, 0, 1.02)
+  s.bezierCurveTo(0, 1.02, 0.01, 0.99, 0.03, 0.94)
+  s.bezierCurveTo(0.08, 0.82, 0.14, 0.62, 0.15, 0.4)
+  s.bezierCurveTo(0.16, 0.18, 0.08, 0.02, 0, 0)
+  return s
+}
+
+function createZZLeafletGeometry() {
+  return geometryFromShapeBuilder('zzLeaflet', buildZZLeafletShape, {
+    curl: 0.12,
+    tipLift: 0.02,
+    curveSegments: 10,
+  })
+}
+
+/**
+ * Classic ZZ: thick upright rachises with opposite glossy oval leaflets
+ * and a terminal tip leaf. Several stems of staggered height from one pot.
+ */
+function createZZPlant({
+  potColor = 0x9a9590,
+  leafColor = 0x1f4a32,
+  leafColorAlt = 0x2a5a3c,
+  stemCount = 6,
+  potScale = 1,
+  height = 0.95,
+} = {}) {
+  const plant = new THREE.Group()
+  plant.name = 'zzPlant'
+
+  const pot = createPot({ potColor, potScale })
+  plant.add(pot)
+
+  // Glossier than other foliage — ZZ leaves are waxy
+  const leafMat = new THREE.MeshStandardMaterial({
+    color: leafColor,
+    roughness: 0.38,
+    metalness: 0.05,
+    side: THREE.DoubleSide,
+  })
+  const leafMatAlt = new THREE.MeshStandardMaterial({
+    color: leafColorAlt,
+    roughness: 0.4,
+    metalness: 0.04,
+    side: THREE.DoubleSide,
+  })
+  const stemMat = new THREE.MeshStandardMaterial({
+    color: 0x2a4a34,
+    roughness: 0.55,
+    metalness: 0.02,
+  })
+
+  const soilY = pot.userData.soilY
+  const foliage = new THREE.Group()
+  foliage.name = 'foliage'
+
+  const _pt = new THREE.Vector3()
+  const _tan = new THREE.Vector3()
+  const _side = new THREE.Vector3()
+  const _up = new THREE.Vector3(0, 1, 0)
+  const _center = new THREE.Vector3()
+  const _vert = new THREE.Vector3()
+
+  for (let s = 0; s < stemCount; s++) {
+    const stem = new THREE.Group()
+    const t = s / Math.max(stemCount - 1, 1)
+    const stemH = height * (0.55 + t * 0.45) * (0.92 + (s % 3) * 0.04)
+    const angle = (s / stemCount) * Math.PI * 2 + 0.35 + (s % 3) * 0.12
+    // Spread across the soil — not clustered at the pot center
+    const soilSpread = 0.17 * potScale
+    const baseR = soilSpread * (0.35 + ((s * 2.618) % 1) * 0.65)
+    // Curl outward — stronger on outer stems
+    const curl = 0.28 + t * 0.22 + (s % 3) * 0.05
+    const botR = 0.028 + (1 - t) * 0.012
+    const topR = 0.008 + t * 0.002
+
+    // Curve starts vertical, arches out along +X in local stem space
+    const curve = new THREE.QuadraticBezierCurve3(
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(curl * 0.15, stemH * 0.55, 0),
+      new THREE.Vector3(curl, stemH * 0.92, 0),
+    )
+
+    const tubularSegments = 16
+    const radialSegments = 8
+    const rachisGeo = new THREE.TubeGeometry(curve, tubularSegments, 1, radialSegments, false)
+    const pos = rachisGeo.attributes.position
+    for (let i = 0; i <= tubularSegments; i++) {
+      const u = i / tubularSegments
+      // Stay thick through the lower stalk, taper more toward the tip
+      const r = THREE.MathUtils.lerp(botR, topR, u * u)
+      curve.getPointAt(u, _center)
+      for (let j = 0; j <= radialSegments; j++) {
+        const idx = i * (radialSegments + 1) + j
+        _vert.fromBufferAttribute(pos, idx)
+        _vert.sub(_center).setLength(r).add(_center)
+        pos.setXYZ(idx, _vert.x, _vert.y, _vert.z)
+      }
+    }
+    pos.needsUpdate = true
+    rachisGeo.computeVertexNormals()
+
+    const rachis = new THREE.Mesh(rachisGeo, stemMat)
+    rachis.castShadow = true
+    stem.add(rachis)
+
+    // Cap the open tube tip so leaflets have something to sit on
+    curve.getPointAt(1, _pt)
+    curve.getTangentAt(1, _tan).normalize()
+    const tipCap = new THREE.Mesh(new THREE.SphereGeometry(topR * 1.15, 8, 6), stemMat)
+    tipCap.position.copy(_pt)
+    tipCap.castShadow = true
+    stem.add(tipCap)
+
+    // Paired leaflets along the upper curve
+    const pairCount = 3 + (s % 3)
+    for (let p = 0; p < pairCount; p++) {
+      const pt = 0.32 + ((p + 1) / (pairCount + 1)) * 0.55
+      const leafScale = (0.1 + pt * 0.1) * (0.9 + t * 0.15)
+      const mat = (p + s) % 2 === 0 ? leafMat : leafMatAlt
+      const attachR = THREE.MathUtils.lerp(botR, topR, pt * pt)
+
+      curve.getPointAt(pt, _pt)
+      curve.getTangentAt(pt, _tan).normalize()
+      _side.crossVectors(_up, _tan)
+      if (_side.lengthSq() < 1e-6) _side.set(0, 0, 1)
+      else _side.normalize()
+
+      for (const side of [-1, 1]) {
+        // Short petiole from rachis surface into the leaflet base
+        const petioleLen = 0.018 + leafScale * 0.08
+        const petiole = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.004, 0.007, petioleLen, 5),
+          stemMat,
+        )
+        petiole.position
+          .copy(_pt)
+          .addScaledVector(_side, side * (attachR * 0.85 + petioleLen * 0.45))
+        petiole.quaternion.setFromUnitVectors(_up, _side.clone().multiplyScalar(side))
+        petiole.castShadow = true
+        stem.add(petiole)
+
+        const leaflet = new THREE.Mesh(createZZLeafletGeometry(), mat)
+        leaflet.scale.set(leafScale * 0.85, leafScale, leafScale)
+        // Base of the leaf mesh sits at the outer end of the petiole
+        leaflet.position
+          .copy(_pt)
+          .addScaledVector(_side, side * (attachR * 0.85 + petioleLen))
+        leaflet.quaternion.setFromUnitVectors(_up, _tan)
+        leaflet.rotateZ(side * (0.95 + pt * 0.15))
+        leaflet.rotateX(-0.12)
+        leaflet.castShadow = true
+        stem.add(leaflet)
+      }
+    }
+
+    // Terminal leaflet — base nested into the tip cap (no floating gap)
+    curve.getPointAt(0.98, _pt)
+    curve.getTangentAt(1, _tan).normalize()
+    const tip = new THREE.Mesh(createZZLeafletGeometry(), leafMat)
+    const tipScale = 0.14 + t * 0.04
+    tip.scale.setScalar(tipScale)
+    tip.position.copy(_pt)
+    tip.quaternion.setFromUnitVectors(_up, _tan)
+    tip.castShadow = true
+    stem.add(tip)
+
+    stem.position.set(Math.cos(angle) * baseR, soilY, Math.sin(angle) * baseR)
+    // Aim local +X curl radially outward from pot center
+    stem.rotation.y = angle
+    foliage.add(stem)
+  }
+
+  plant.add(foliage)
+  return plant
+}
+
 // —— Monstera ——
 
 function createMonstera({
@@ -1441,16 +1626,16 @@ export function createPlants() {
   deskSnake.rotation.y = 0.6
   group.add(deskSnake)
 
-  // Near the turntable / vinyl — large cactus clear of the −X wall
-  const stereoCactus = createCactus({
-    potColor: 0xb85c38,
-    potScale: 0.95,
-    height: 1.55,
+  // Near the turntable / vinyl — ZZ on the small side table
+  const vinylZZ = createZZPlant({
+    stemCount: 6,
+    potScale: 0.78,
+    height: 0.92,
   })
-  stereoCactus.position.set(-(WALL_POS - 0.32), 0, -2.15)
-  // Arms along the wall (±Z) so neither clips into −X
-  stereoCactus.rotation.y = 1.15
-  group.add(stereoCactus)
+  // Table at (−(WALL_POS − 0.48), 0, −2.15), topY 0.48, top thickness 0.035
+  vinylZZ.position.set(-(WALL_POS - 0.48), 0.48 + 0.018, -2.15)
+  vinylZZ.rotation.y = 0.4
+  group.add(vinylZZ)
 
   // Hanging planters — ceiling-mounted in the back corners flanking the window
   const ceilingY = WALL_H - 0.01

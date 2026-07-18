@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { WALL_POS } from './roomConstants.js'
 
 function mat(color, props = {}) {
   return new THREE.MeshStandardMaterial({
@@ -251,6 +252,18 @@ export function createSideTables() {
   })
   listening.position.set(-1.48, 0, -2.32)
   group.add(listening)
+
+  // Near the vinyl / turntable wall — holds the ZZ plant
+  const vinylPlant = createSideTable({
+    style: 'round',
+    radius: 0.22,
+    topY: 0.48,
+    woodColor: 0x5c4330,
+    prop: null,
+  })
+  vinylPlant.name = 'vinylPlantTable'
+  vinylPlant.position.set(-(WALL_POS - 0.48), 0, -2.15)
+  group.add(vinylPlant)
 
   return group
 }

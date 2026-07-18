@@ -307,7 +307,7 @@ body,
   }
 }
 
-/* —— Portfolio screen (CSS3D, lives on the monitor) —— */
+/* —— Portfolio / resume screen (CSS3D iframe on the monitor) —— */
 
 .portfolio-screen {
   width: 850px;
@@ -330,77 +330,85 @@ body,
   cursor: default;
 }
 
-.folio {
+.folio-frame {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.folio-viewport {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: var(--screen-bg);
+}
+
+.folio-placeholder {
+  position: absolute;
+  inset: 0;
   display: flex;
   flex-direction: column;
-  height: 100%;
-  padding: 22px 28px 20px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px;
+  text-align: center;
+  background: linear-gradient(160deg, #1a2420 0%, #0f1412 55%, #182018 100%);
+  transition: opacity 0.3s ease;
 }
 
-.folio-top {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 14px;
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--screen-line);
+.portfolio-screen.is-loaded .folio-placeholder {
+  opacity: 0;
+  pointer-events: none;
 }
 
-.folio-tabs {
-  display: flex;
-  gap: 4px;
-  margin-bottom: 14px;
-}
-
-.folio-tab {
-  appearance: none;
-  border: 0;
-  background: transparent;
-  color: var(--screen-muted);
-  font: inherit;
-  font-size: 13px;
-  letter-spacing: 0.06em;
+.folio-placeholder__kicker {
+  font-size: 12px;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  padding: 6px 10px;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: color 0.2s ease, background 0.2s ease;
+  color: var(--screen-accent);
 }
 
-.folio-tab:hover {
-  color: var(--screen-ink);
-}
-
-.folio-tab.is-active {
-  color: var(--screen-ink);
-  background: rgba(143, 191, 154, 0.12);
-}
-
-.folio-brand {
-  font-family: "Fraunces", Georgia, serif;
-  font-weight: 600;
-  font-size: 28px;
-  letter-spacing: -0.02em;
-  line-height: 1.1;
-}
-
-.folio-role {
-  margin-top: 4px;
-  font-size: 14px;
+.folio-placeholder__copy {
+  font-size: 15px;
   color: var(--screen-muted);
+}
+
+.folio-iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: var(--screen-bg);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+}
+
+.portfolio-screen.is-loaded .folio-iframe {
+  opacity: 1;
+}
+
+.portfolio-screen.is-interactive.is-loaded .folio-iframe {
+  pointer-events: auto;
 }
 
 .folio-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
   appearance: none;
   border: 0;
-  background: transparent;
+  border-radius: 6px;
+  background: rgba(15, 20, 18, 0.72);
   color: var(--screen-muted);
-  font-size: 18px;
+  font-size: 16px;
   line-height: 1;
-  padding: 6px 8px;
+  padding: 8px 10px;
   cursor: pointer;
-  transition: color 0.2s ease, opacity 0.2s ease;
+  transition: color 0.2s ease, opacity 0.2s ease, background 0.2s ease;
   opacity: 0;
   pointer-events: none;
 }
@@ -412,280 +420,7 @@ body,
 
 .folio-close:hover {
   color: var(--screen-ink);
-}
-
-.folio-body {
-  flex: 1;
-  min-height: 0;
-  overflow: auto;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(228, 239, 232, 0.25) transparent;
-}
-
-.folio-kicker {
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--screen-accent);
-  margin: 18px 0 8px;
-}
-
-.folio-jobs,
-.folio-projects {
-  display: flex;
-  flex-direction: column;
-}
-
-.folio-job,
-.folio-project {
-  appearance: none;
-  border: 0;
-  border-top: 1px solid var(--screen-line);
-  background: transparent;
-  color: inherit;
-  text-align: left;
-  padding: 10px 4px;
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 16px;
-  cursor: pointer;
-  transition: background 0.2s ease;
-  width: 100%;
-  font: inherit;
-}
-
-.folio-job:last-child,
-.folio-project:last-child {
-  border-bottom: 1px solid var(--screen-line);
-}
-
-.folio-job:hover,
-.folio-project:hover {
-  background: rgba(143, 191, 154, 0.08);
-}
-
-.folio-job__main,
-.folio-project__meta {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.folio-project__meta {
-  flex-direction: row;
-  align-items: baseline;
-  gap: 12px;
-}
-
-.folio-job__company,
-.folio-project__title {
-  font-family: "Fraunces", Georgia, serif;
-  font-size: 18px;
-  font-weight: 500;
-  letter-spacing: -0.01em;
-}
-
-.folio-job__title {
-  font-size: 13px;
-  color: var(--screen-muted);
-}
-
-.folio-job__side {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 2px;
-  flex-shrink: 0;
-}
-
-.folio-job__dates,
-.folio-project__year,
-.folio-job__tag,
-.folio-project__tag {
-  font-size: 12px;
-  color: var(--screen-muted);
-}
-
-.folio-job__tag,
-.folio-project__tag {
-  color: var(--screen-accent);
-}
-
-.folio-blurb {
-  font-size: 15px;
-  line-height: 1.55;
-  color: rgba(228, 239, 232, 0.82);
-  max-width: 40em;
-}
-
-.folio-skills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 8px;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.folio-skills li {
-  font-size: 12px;
-  padding: 4px 9px;
-  border-radius: 4px;
-  background: rgba(143, 191, 154, 0.1);
-  color: var(--screen-ink);
-  border: 1px solid rgba(143, 191, 154, 0.18);
-}
-
-.folio-edu {
-  font-size: 14px;
-  line-height: 1.5;
-  color: rgba(228, 239, 232, 0.85);
-}
-
-.folio-edu strong {
-  font-weight: 600;
-  color: var(--screen-ink);
-}
-
-.folio-edu__detail {
-  display: block;
-  margin-top: 2px;
-  font-size: 13px;
-  color: var(--screen-muted);
-}
-
-.folio-contact {
-  margin-top: 16px;
-  padding-top: 14px;
-  border-top: 1px solid var(--screen-line);
-}
-
-.folio-mail {
-  display: inline-block;
-  font-size: 14px;
-  color: var(--screen-accent);
-  text-decoration: none;
-}
-
-.folio-mail:hover {
-  text-decoration: underline;
-}
-
-.folio-links {
-  margin-top: 8px;
-  font-size: 13px;
-  color: var(--screen-muted);
-}
-
-.folio-link {
-  color: var(--screen-ink);
-  text-decoration: none;
-}
-
-.folio-link:hover {
-  color: var(--screen-accent);
-}
-
-.folio-link-sep {
-  margin: 0 8px;
-  color: var(--screen-muted);
-}
-
-.folio-resume {
-  display: inline-block;
-  margin-top: 10px;
-  font-size: 13px;
-  color: var(--screen-accent);
-  text-decoration: none;
-}
-
-.folio-resume:hover {
-  text-decoration: underline;
-}
-
-.folio-detail {
-  padding-top: 2px;
-}
-
-.folio-back {
-  appearance: none;
-  border: 0;
-  background: transparent;
-  color: var(--screen-muted);
-  font: inherit;
-  font-size: 13px;
-  cursor: pointer;
-  margin-bottom: 12px;
-  padding: 0;
-}
-
-.folio-back:hover {
-  color: var(--screen-ink);
-}
-
-.folio-detail__tag {
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--screen-accent);
-  margin-bottom: 6px;
-}
-
-.folio-detail__title {
-  font-family: "Fraunces", Georgia, serif;
-  font-size: 26px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  line-height: 1.15;
-}
-
-.folio-detail__meta {
-  margin-top: 4px;
-  font-size: 13px;
-  color: var(--screen-muted);
-}
-
-.folio-detail__summary {
-  margin-top: 12px;
-  font-size: 14px;
-  line-height: 1.55;
-  color: rgba(228, 239, 232, 0.82);
-  max-width: 40em;
-}
-
-.folio-detail__highlights {
-  margin: 12px 0 0;
-  padding-left: 1.1em;
-  font-size: 13px;
-  line-height: 1.5;
-  color: rgba(228, 239, 232, 0.75);
-  max-width: 42em;
-}
-
-.folio-detail__highlights li + li {
-  margin-top: 4px;
-}
-
-.folio-detail__stack {
-  margin-top: 14px;
-  font-size: 12px;
-  line-height: 1.45;
-  color: var(--screen-accent);
-  max-width: 42em;
-}
-
-.folio-detail__link {
-  display: inline-block;
-  margin-top: 16px;
-  font-size: 14px;
-  color: var(--screen-accent);
-  text-decoration: none;
-}
-
-.folio-detail__link:hover {
-  text-decoration: underline;
+  background: rgba(15, 20, 18, 0.9);
 }
 
 body.is-pointer canvas,

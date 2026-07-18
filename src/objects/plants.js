@@ -396,6 +396,325 @@ function createMonstera({
   return plant
 }
 
+// —— Columnar cactus (saguaro-style) ——
+
+/** Fluted column — deep vertical ribs like Carnegiea gigantea. */
+function createRibbedCactusGeometry(height, botR, topR, ribCount = 14) {
+  const segs = ribCount * 6
+  const hSegs = 20
+  const geo = new THREE.CylinderGeometry(topR, botR, height, segs, hSegs, false)
+  const pos = geo.attributes.position
+  const halfH = height / 2
+
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i)
+    const y = pos.getY(i)
+    const z = pos.getZ(i)
+    const r0 = Math.hypot(x, z)
+    if (r0 < 1e-6) continue
+
+    const angle = Math.atan2(z, x)
+    // Peaks on ribs, deep valleys between (classic saguaro fluting)
+    const rib = 0.5 + 0.5 * Math.cos(angle * ribCount)
+    const flute = 0.62 + 0.38 * rib * rib
+    // Slight barrel — wider mid-column
+    const t = (y + halfH) / height
+    const bulge = 1 + 0.06 * Math.sin(t * Math.PI)
+
+    pos.setX(i, (x / r0) * r0 * flute * bulge)
+    pos.setZ(i, (z / r0) * r0 * flute * bulge)
+  }
+
+  pos.needsUpdate = true
+  geo.computeVertexNormals()
+  return geo
+}
+
+function createCactusSkinTexture() {
+  const size = 256
+  const canvas = document.createElement('canvas')
+  canvas.width = size
+  canvas.height = size
+  const ctx = canvas.getContext('2d')
+  ctx.fillStyle = '#3aaa4e'
+  ctx.fillRect(0, 0, size, size)
+
+  // Subtle vertical grain + mottling
+  for (let x = 0; x < size; x++) {
+    const shade = 0.92 + Math.sin(x * 0.4) * 0.04
+    ctx.fillStyle = `rgba(20, 90, 40, ${0.06 + (1 - shade) * 0.08})`
+    ctx.fillRect(x, 0, 1, size)
+  }
+  for (let i = 0; i < 900; i++) {
+    const x = Math.random() * size
+    const y = Math.random() * size
+    const g = 140 + Math.random() * 60
+    ctx.fillStyle = `rgba(${g * 0.4}, ${g}, ${g * 0.35}, 0.14)`
+    ctx.fillRect(x, y, 1 + Math.random() * 2, 2 + Math.random() * 4)
+  }
+
+  const tex = new THREE.CanvasTexture(canvas)
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping
+  tex.repeat.set(2, 4)
+  tex.colorSpace = THREE.SRGBColorSpace
+  return tex
+}
+
+function addSpineClusters(parent, spineMat, {
+  height,
+  botR,
+  topR,
+  ribCount,
+  rows = 10,
+  startY = 0.08,
+  endY = 0.96,
+}) {
+  const areole = new THREE.MeshStandardMaterial({
+    color: 0xc4b89a,
+    roughness: 0.9,
+  })
+  const _up = new THREE.Vector3(0, 1, 0)
+  const _dir = new THREE.Vector3()
+
+  for (let i = 0; i < ribCount; i++) {
+    const a = (i / ribCount) * Math.PI * 2 + 0.02
+    const ca = Math.cos(a)
+    const sa = Math.sin(a)
+    for (let j = 0; j < rows; j++) {
+      const t = startY + (j / Math.max(rows - 1, 1)) * (endY - startY)
+      const y = height * t
+      const r = THREE.MathUtils.lerp(botR, topR, t) * 0.98
+      const hub = new THREE.Mesh(new THREE.SphereGeometry(0.006, 5, 4), areole)
+      hub.position.set(ca * r, y, sa * r)
+      parent.add(hub)
+
+      const n = 4 + (j % 3)
+      for (let k = 0; k < n; k++) {
+        const spread = n > 1 ? (k / (n - 1) - 0.5) * 0.7 : 0
+        const lift = -0.15 + (k % 2) * 0.25
+        const spine = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.0012, 0.0022, 0.034 + (k % 2) * 0.01, 3),
+          spineMat,
+        )
+        spine.position.set(ca * (r + 0.004), y, sa * (r + 0.004))
+        _dir.set(ca + (-sa) * spread * 0.5, lift, sa + ca * spread * 0.5).normalize()
+        spine.quaternion.setFromUnitVectors(_up, _dir)
+        parent.add(spine)
+      }
+    }
+  }
+}
+
+function createCactusColumn(mat, spineMat, {
+  height,
+  botR,
+  topR,
+  ribCount = 14,
+  spines = true,
+}) {
+  const column = new THREE.Group()
+  const body = new THREE.Mesh(
+    createRibbedCactusGeometry(height, botR, topR, ribCount),
+    mat,
+  )
+  body.position.y = height / 2
+  body.castShadow = true
+  body.receiveShadow = true
+  column.add(body)
+
+  // Domed apex
+  const tip = new THREE.Mesh(
+    new THREE.SphereGeometry(topR * 0.85, 16, 12),
+    mat,
+  )
+  tip.scale.set(1, 0.72, 1)
+  tip.position.y = height + topR * 0.15
+  tip.castShadow = true
+  column.add(tip)
+
+  if (spines) {
+    addSpineClusters(column, spineMat, {
+      height,
+      botR,
+      topR,
+      ribCount,
+      rows: Math.max(6, Math.round(height * 7)),
+    })
+  }
+
+  return column
+}
+
+/** Smooth saguaro arm — out then up along a curve. */
+function createCactusArm(mat, spineMat, {
+  outLen,
+  upLen,
+  botR,
+  topR,
+  ribCount = 10,
+  side = 1,
+}) {
+  const arm = new THREE.Group()
+  const curve = new THREE.CubicBezierCurve3(
+    new THREE.Vector3(0, 0, 0),
+    new THREE.Vector3(side * outLen * 0.55, outLen * 0.08, 0),
+    new THREE.Vector3(side * outLen, outLen * 0.35, 0),
+    new THREE.Vector3(side * outLen * 0.95, outLen * 0.2 + upLen, 0),
+  )
+
+  // Approximate tube with stacked ribbed segments along the curve
+  const steps = 8
+  for (let i = 0; i < steps; i++) {
+    const t0 = i / steps
+    const t1 = (i + 1) / steps
+    const p0 = curve.getPoint(t0)
+    const p1 = curve.getPoint(t1)
+    const mid = p0.clone().lerp(p1, 0.5)
+    const len = p0.distanceTo(p1)
+    const r0 = THREE.MathUtils.lerp(botR, topR, t0)
+    const r1 = THREE.MathUtils.lerp(botR, topR, t1)
+    const seg = new THREE.Mesh(
+      createRibbedCactusGeometry(len * 1.08, r0, r1, ribCount),
+      mat,
+    )
+    seg.position.copy(mid)
+    seg.quaternion.setFromUnitVectors(
+      new THREE.Vector3(0, 1, 0),
+      p1.clone().sub(p0).normalize(),
+    )
+    seg.castShadow = true
+    seg.receiveShadow = true
+    arm.add(seg)
+  }
+
+  const tipP = curve.getPoint(1)
+  const tipT = curve.getTangent(1)
+  const tip = new THREE.Mesh(new THREE.SphereGeometry(topR * 0.9, 12, 10), mat)
+  tip.scale.set(1, 0.7, 1)
+  tip.position.copy(tipP).addScaledVector(tipT, topR * 0.2)
+  tip.castShadow = true
+  arm.add(tip)
+
+  // Spines along the outer curve
+  const _up = new THREE.Vector3(0, 1, 0)
+  const _dir = new THREE.Vector3()
+  const _out = new THREE.Vector3()
+  const _tan = new THREE.Vector3()
+  for (let i = 2; i < 14; i++) {
+    const t = i / 14
+    const p = curve.getPoint(t)
+    _tan.copy(curve.getTangent(t)).normalize()
+    _out.crossVectors(_tan, new THREE.Vector3(0, 0, 1))
+    if (_out.lengthSq() < 0.1) _out.crossVectors(_tan, new THREE.Vector3(1, 0, 0))
+    _out.normalize()
+    if (_out.dot(new THREE.Vector3(side, 0, 0)) < 0) _out.negate()
+
+    const r = THREE.MathUtils.lerp(botR, topR, t)
+    for (let k = 0; k < 3; k++) {
+      const spine = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.0012, 0.002, 0.03, 3),
+        spineMat,
+      )
+      _dir.copy(_out).applyAxisAngle(_tan, (k - 1) * 0.35).normalize()
+      spine.position.copy(p).addScaledVector(_dir, r * 0.9)
+      spine.quaternion.setFromUnitVectors(_up, _dir)
+      arm.add(spine)
+    }
+  }
+
+  return arm
+}
+
+function createCactus({
+  potColor = 0xc4683a,
+  potScale = 1,
+  height = 1.45,
+} = {}) {
+  const plant = new THREE.Group()
+  plant.name = 'cactus'
+  const pot = createPot({ potColor, potScale, tall: true })
+  plant.add(pot)
+
+  const skinMap = createCactusSkinTexture()
+  const cactusMat = new THREE.MeshStandardMaterial({
+    color: 0x4ec85a,
+    map: skinMap,
+    roughness: 0.82,
+    metalness: 0,
+  })
+  const spineMat = new THREE.MeshStandardMaterial({
+    color: 0xe8e2d4,
+    roughness: 0.45,
+    metalness: 0.08,
+  })
+
+  const soilY = pot.userData.soilY
+
+  // Desert grit on the soil
+  const gritMat = new THREE.MeshStandardMaterial({
+    color: 0xc2b7a5,
+    roughness: 1,
+  })
+  const grit = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.26 * potScale, 0.26 * potScale, 0.025, 20),
+    gritMat,
+  )
+  grit.position.y = soilY + 0.012
+  grit.receiveShadow = true
+  plant.add(grit)
+  for (let i = 0; i < 18; i++) {
+    const stone = new THREE.Mesh(
+      new THREE.SphereGeometry(0.012 + (i % 4) * 0.004, 5, 4),
+      new THREE.MeshStandardMaterial({
+        color: i % 2 === 0 ? 0xb8a990 : 0x9a8e7a,
+        roughness: 1,
+      }),
+    )
+    const a = (i / 18) * Math.PI * 2
+    const rr = 0.1 + (i % 5) * 0.02
+    stone.position.set(Math.cos(a) * rr, soilY + 0.02, Math.sin(a) * rr)
+    stone.scale.y = 0.55
+    plant.add(stone)
+  }
+
+  const trunkR = 0.125 * potScale
+  const trunk = createCactusColumn(cactusMat, spineMat, {
+    height,
+    botR: trunkR * 1.05,
+    topR: trunkR * 0.88,
+    ribCount: 14,
+  })
+  trunk.position.y = soilY
+  plant.add(trunk)
+
+  // Classic saguaro arms — lower larger arm, higher smaller arm
+  const armLow = createCactusArm(cactusMat, spineMat, {
+    outLen: height * 0.28,
+    upLen: height * 0.42,
+    botR: trunkR * 0.58,
+    topR: trunkR * 0.42,
+    ribCount: 11,
+    side: 1,
+  })
+  armLow.position.set(trunkR * 0.72, soilY + height * 0.38, 0)
+  armLow.rotation.y = 0.25
+  plant.add(armLow)
+
+  const armHigh = createCactusArm(cactusMat, spineMat, {
+    outLen: height * 0.22,
+    upLen: height * 0.34,
+    botR: trunkR * 0.5,
+    topR: trunkR * 0.38,
+    ribCount: 10,
+    side: -1,
+  })
+  armHigh.position.set(-trunkR * 0.7, soilY + height * 0.52, trunkR * 0.08)
+  armHigh.rotation.y = -0.4
+  plant.add(armHigh)
+
+  return plant
+}
+
 // —— Snake plant (Sansevieria) ——
 
 function createSnakePlant({
@@ -1110,16 +1429,15 @@ export function createPlants() {
   deskSnake.rotation.y = 0.6
   group.add(deskSnake)
 
-  // Near the turntable / vinyl — clear of the −X wall
-  const stereoMonstera = createMonstera({
+  // Near the turntable / vinyl — large cactus clear of the −X wall
+  const stereoCactus = createCactus({
     potColor: 0xb85c38,
-    height: 0.85,
-    leafCount: 4,
-    potScale: 0.75,
+    potScale: 0.95,
+    height: 1.55,
   })
-  stereoMonstera.position.set(-(WALL_POS - 0.32), 0, -2.15)
-  stereoMonstera.rotation.y = 0.85 // lean into the room (+X)
-  group.add(stereoMonstera)
+  stereoCactus.position.set(-(WALL_POS - 0.32), 0, -2.15)
+  stereoCactus.rotation.y = 0.55
+  group.add(stereoCactus)
 
   // Hanging planters — pulled off the walls so trailing leaves don’t clip
   const hangA = createHangingPlanter({

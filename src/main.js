@@ -42,6 +42,7 @@ import {
 } from './ui/poopyhoochScreen.js'
 import { createFocusHelper } from './ui/focusHelper.js'
 import { createLoadingScreen } from './ui/loadingScreen.js'
+import { RESUME_URL } from './resumeUrl.js'
 
 RectAreaLightUniformsLib.init()
 
@@ -214,6 +215,7 @@ bikeReady.catch((err) => console.warn('Bicycle failed to load', err))
 instrumentsReady.catch((err) => console.warn('Bass model failed to load', err))
 
 const portfolioUi = createPortfolioScreen(monitor)
+portfolioUi.preload()
 const earwormsUi = createEarwormsScreen(turntable)
 earwormsUi.preload()
 const poopyUi = createPoopyHoochScreen(bathroom)
@@ -273,9 +275,16 @@ function openPortfolio() {
   if (FREE_CAMERA || rig.isBusy || rig.isFocused) return
   hoverHighlight.clear()
   activeFocus = 'portfolio'
-  portfolioUi.showList()
+  portfolioUi.show()
+  focusHelper.show({
+    title: 'Resume',
+    blurb: 'John Berger — software engineer.',
+    href: RESUME_URL,
+    anchor: monitorScreen,
+    width: 0.85,
+  })
   rig.enterFocus(monitorScreen, { width: 0.85, height: 0.48, fill: 0.94 })
-  setHint('Reading the screen…')
+  setHint('Reading the resume…')
 }
 
 function openEarworms() {
@@ -331,7 +340,7 @@ function closeFocus() {
   setPoopyInteractive(false)
   setFocusedUi(false)
   focusHelper.hide()
-  if (activeFocus === 'portfolio') portfolioUi.showList()
+  if (activeFocus === 'portfolio') portfolioUi.hide()
   if (activeFocus === 'earworms') earwormsUi.hide()
   if (activeFocus === 'poopyhooch') poopyUi.hide()
   activeFocus = null

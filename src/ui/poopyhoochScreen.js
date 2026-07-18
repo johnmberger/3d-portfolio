@@ -25,8 +25,8 @@ export function createPoopyHoochScreen(bathroom) {
     <div class="poopyhooch-frame">
       <div class="poopyhooch-viewport">
         <div class="poopyhooch-placeholder">
-          <p class="poopyhooch-placeholder__kicker">Mirror mirror</p>
-          <p class="poopyhooch-placeholder__copy">Click the bathroom to take a look</p>
+          <p class="poopyhooch-placeholder__kicker">Poop the Hooch</p>
+          <p class="poopyhooch-placeholder__copy">Checking the water…</p>
         </div>
         <iframe
           class="poopyhooch-iframe"

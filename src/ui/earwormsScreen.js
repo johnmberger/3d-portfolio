@@ -2,6 +2,7 @@ import * as THREE from 'three'
 import { CSS3DObject } from 'three/addons/renderers/CSS3DRenderer.js'
 
 const EARWORMS_URL = 'https://earworms.johnberger.dev'
+export { EARWORMS_URL }
 const SCREEN_PX = 800
 const WORLD_SIZE = 0.4
 /** Wait for the room to settle before fetching Earworms. */
@@ -21,10 +22,6 @@ export function createEarwormsScreen(turntable) {
 
   element.innerHTML = `
     <div class="earworms-frame">
-      <header class="earworms-chrome">
-        <p class="earworms-chrome__title">Earworms</p>
-        <button class="earworms-close" type="button" aria-label="Close Earworms">✕</button>
-      </header>
       <div class="earworms-viewport">
         <div class="earworms-placeholder">
           <p class="earworms-placeholder__kicker">Now playing</p>
@@ -41,7 +38,6 @@ export function createEarwormsScreen(turntable) {
   `
 
   const iframe = element.querySelector('.earworms-iframe')
-  const closeBtn = element.querySelector('.earworms-close')
 
   let started = false
   let ready = false
@@ -91,20 +87,21 @@ export function createEarwormsScreen(turntable) {
   function hide() {
     revealWhenReady = false
     element.classList.remove('is-loaded')
+    object.visible = false
+    element.style.display = 'none'
   }
 
   return {
     element,
     object,
-    closeBtn,
     preload,
     show,
     hide,
-    screenSize: { width: WORLD_SIZE, height: WORLD_SIZE, fill: 0.94 },
+    screenSize: { width: WORLD_SIZE, height: WORLD_SIZE, fill: 0.7 },
   }
 }
 
-/** CSS3D ignores WebGL depth — only show while focused, and not from behind. */
+/** CSS3D ignores WebGL depth — only show once focused (not mid-zoom), and not from behind. */
 export function updateEarwormsVisibility(
   { object },
   camera,
@@ -113,10 +110,14 @@ export function updateEarwormsVisibility(
 ) {
   if (!active) {
     object.visible = false
+    // CSS3DRenderer only applies display:none during render — do it here so a
+    // skipped css pass can't leave the overlay frozen on screen.
+    object.element.style.display = 'none'
     return
   }
   screenMesh.getWorldPosition(_screenPos)
   _screenNormal.set(0, 0, 1).transformDirection(screenMesh.matrixWorld)
   _toCamera.subVectors(camera.position, _screenPos)
   object.visible = _toCamera.dot(_screenNormal) > 0.02
+  if (!object.visible) object.element.style.display = 'none'
 }

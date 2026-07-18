@@ -52,7 +52,6 @@ function paintBotanical(ctx, w, h) {
   ctx.fillStyle = '#e8e2d6'
   ctx.fillRect(0, 0, w, h)
 
-  // Soft paper wash
   const wash = ctx.createRadialGradient(w * 0.5, h * 0.4, 20, w * 0.5, h * 0.5, w * 0.7)
   wash.addColorStop(0, 'rgba(210, 220, 200, 0.45)')
   wash.addColorStop(1, 'rgba(232, 226, 214, 0)')
@@ -63,13 +62,11 @@ function paintBotanical(ctx, w, h) {
   ctx.fillStyle = 'rgba(61, 92, 56, 0.55)'
   ctx.lineWidth = 3
 
-  // Stem
   ctx.beginPath()
   ctx.moveTo(w * 0.5, h * 0.92)
   ctx.quadraticCurveTo(w * 0.48, h * 0.55, w * 0.52, h * 0.18)
   ctx.stroke()
 
-  // Leaves
   const leaves = [
     [0.5, 0.35, -0.55, 0.16],
     [0.5, 0.48, 0.6, 0.18],
@@ -191,7 +188,8 @@ function createFramedPrint({
 }
 
 /**
- * Scattered framed prints around the living room walls.
+ * Framed prints — placements audited against TV, bike, vinyl corner instruments,
+ * hanging plants, kitchenette, and the credits plaque.
  */
 export function createWallArt() {
   const group = new THREE.Group()
@@ -200,64 +198,60 @@ export function createWallArt() {
   const wall = WALL_POS - 0.02
 
   const pieces = [
-    // Left wall — TV nook gallery
+    // Left wall (−X) — north of bathroom door; hanging plant near z≈0.35
     {
       paint: paintSunset,
-      artW: 0.72,
-      artH: 0.9,
-      pos: [-wall, 2.15, 1.2],
+      artW: 0.65,
+      artH: 0.82,
+      pos: [-wall, 2.35, 0.85],
       rotY: Math.PI / 2,
     },
     {
       paint: paintBotanical,
-      artW: 0.42,
-      artH: 0.55,
+      artW: 0.4,
+      artH: 0.52,
       frameColor: 0x5c4330,
-      pos: [-wall, 1.85, 2.55],
+      pos: [-wall, 2.45, 1.85],
       rotY: Math.PI / 2,
     },
     {
       paint: paintLines,
-      artW: 0.38,
-      artH: 0.5,
+      artW: 0.36,
+      artH: 0.48,
       frameColor: 0x2a2420,
-      pos: [-wall, 2.45, 2.55],
+      pos: [-wall, 1.95, 2.55],
       rotY: Math.PI / 2,
     },
-    // Back wall — flanking the main window
+
+    // Back wall (−Z) — only the right-of-window print remains.
+    // Left-of-window geometry print moved off this wall (instruments live there now).
+    {
+      paint: paintBotanical,
+      artW: 0.4,
+      artH: 0.52,
+      frameColor: 0x6b5340,
+      pos: [2.7, 2.15, -wall],
+      rotY: 0,
+    },
+
+    // Front wall (+Z) — between TV (~−1.9) and entry door (~−0.06); was beside the bike
     {
       paint: paintGeometry,
       artW: 0.48,
       artH: 0.62,
       frameColor: 0x1a1816,
       matteColor: 0xe8e2d8,
-      pos: [-2.75, 2.05, -wall],
-      rotY: 0,
-    },
-    {
-      paint: paintBotanical,
-      artW: 0.4,
-      artH: 0.52,
-      frameColor: 0x6b5340,
-      pos: [2.55, 2.0, -wall],
-      rotY: 0,
-    },
-    // Front wall — left of the entry / bike
-    {
-      paint: paintLines,
-      artW: 0.5,
-      artH: 0.65,
-      frameColor: 0x3d2e22,
-      pos: [-1.65, 2.1, wall],
+      pos: [-1.05, 2.25, wall],
       rotY: Math.PI,
     },
-    // Right wall — near dining, south of kitchenette
+
+    // Right wall (+X) — south of side window (winZ≈−0.35)
     {
       paint: paintSunset,
       artW: 0.45,
       artH: 0.58,
       frameColor: 0x4a3a2c,
-      pos: [wall, 1.95, 1.65],
+      pos: [wall, 2.05, -2.45],
       rotY: -Math.PI / 2,
     },
   ]

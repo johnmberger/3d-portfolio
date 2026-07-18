@@ -116,6 +116,118 @@ function createCuttingBoard({ boardMat, knifeMat, handleMat }) {
   return g
 }
 
+function createFridge({ handle, kickMat }) {
+  const fridge = new THREE.Group()
+  fridge.name = 'fridge'
+
+  const fW = 0.78
+  const fH = 1.92
+  const fD = 0.7
+  const doorT = 0.048
+  const gasket = mat(0x1a1c1e, { roughness: 0.9, metalness: 0.05 })
+  const bodySteel = mat(0xb8bcc2, { metalness: 0.82, roughness: 0.22 })
+  const doorSteel = mat(0xc8ccd2, { metalness: 0.78, roughness: 0.2 })
+  const accentSteel = mat(0x9aa0a8, { metalness: 0.75, roughness: 0.32 })
+
+  // Cabinet shell (slightly set back from doors)
+  const shell = box(fW, fH - 0.1, fD - 0.04, bodySteel)
+  shell.position.set(0, (fH - 0.1) / 2 + 0.1, -0.01)
+  fridge.add(shell)
+
+  // Top cap
+  const topCap = box(fW + 0.01, 0.04, fD + 0.01, accentSteel)
+  topCap.position.set(0, fH - 0.02, 0)
+  fridge.add(topCap)
+
+  // Toe kick / vent grille area
+  const kick = box(fW - 0.02, 0.1, fD - 0.08, kickMat)
+  kick.position.set(0, 0.05, 0.02)
+  fridge.add(kick)
+
+  const vent = box(fW - 0.14, 0.028, 0.012, accentSteel)
+  vent.position.set(0, 0.055, fD / 2 - 0.02)
+  fridge.add(vent)
+  for (let i = -3; i <= 3; i++) {
+    const slot = box(0.012, 0.02, 0.006, kickMat)
+    slot.position.set(i * 0.07, 0.055, fD / 2 - 0.012)
+    fridge.add(slot)
+  }
+
+  // Door layout: top freezer ~30%, bottom fridge
+  const gap = 0.012
+  const freezerH = 0.58
+  const fridgeDoorH = fH - 0.12 - freezerH - gap - 0.02
+  const doorW = fW - 0.06
+  const doorZ = fD / 2 - doorT / 2 + 0.012
+
+  function addDoor(height, y) {
+    const door = new THREE.Group()
+
+    const panel = box(doorW, height, doorT, doorSteel)
+    panel.position.set(0, 0, 0)
+    door.add(panel)
+
+    // Slightly recessed face plate
+    const face = box(doorW - 0.04, height - 0.04, 0.008, doorSteel)
+    face.position.set(0, 0, doorT / 2 + 0.002)
+    door.add(face)
+
+    // Dark gasket / reveal around door
+    const seal = box(doorW + 0.01, height + 0.01, 0.01, gasket)
+    seal.position.set(0, 0, -doorT / 2 - 0.002)
+    door.add(seal)
+
+    door.position.set(0, y, doorZ)
+    fridge.add(door)
+    return door
+  }
+
+  const freezerY = 0.1 + fridgeDoorH + gap + freezerH / 2
+  const fridgeDoorY = 0.1 + fridgeDoorH / 2
+  addDoor(freezerH, freezerY)
+  addDoor(fridgeDoorH, fridgeDoorY)
+
+  // Horizontal split trim
+  const split = box(doorW + 0.02, 0.014, 0.02, accentSteel)
+  split.position.set(0, 0.1 + fridgeDoorH + gap / 2, doorZ + doorT / 2)
+  fridge.add(split)
+
+  // Vertical bar handles (right side) — freezer + fridge
+  function addBarHandle(y, length) {
+    const hx = -doorW / 2 + 0.06
+    const hz = doorZ + doorT / 2 + 0.028
+    const bar = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.01, 0.01, length, 12),
+      handle,
+    )
+    bar.position.set(hx, y, hz)
+    bar.castShadow = true
+    fridge.add(bar)
+
+    for (const oy of [-length / 2 + 0.02, length / 2 - 0.02]) {
+      const post = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.008, 0.008, 0.03, 10),
+        handle,
+      )
+      post.rotation.x = Math.PI / 2
+      post.position.set(hx, y + oy, hz - 0.015)
+      fridge.add(post)
+    }
+  }
+
+  addBarHandle(freezerY, 0.28)
+  addBarHandle(fridgeDoorY + 0.15, 0.72)
+
+  // Side edge trim lines
+  for (const sx of [-fW / 2 + 0.008, fW / 2 - 0.008]) {
+    const edge = box(0.012, fH - 0.14, 0.01, accentSteel)
+    edge.position.set(sx, fH / 2 + 0.02, doorZ - 0.02)
+    fridge.add(edge)
+  }
+
+  return fridge
+}
+
 /**
  * L-shaped kitchenette wrapping the front-right corner.
  * Cabinets along the front wall and right wall; fridge finishes the side run.
@@ -300,41 +412,12 @@ export function createKitchenette() {
   group.add(board)
 
   // —— Fridge beyond the side run ——
-  const fridge = new THREE.Group()
-  fridge.name = 'fridge'
-
-  const fW = 0.82
-  const fH = 2.05
-  const fD = 0.74
-
-  const body = box(fW, fH, fD, steel)
-  body.position.y = fH / 2
-  fridge.add(body)
-
-  const freezer = box(fW - 0.04, 0.62, 0.04, steelDark)
-  freezer.position.set(0, fH - 0.36, fD / 2 + 0.01)
-  fridge.add(freezer)
-
-  const fDoor = box(fW - 0.04, 1.28, 0.04, steel)
-  fDoor.position.set(0, 0.7, fD / 2 + 0.01)
-  fridge.add(fDoor)
-
-  const seam = box(fW - 0.08, 0.012, 0.01, steelDark)
-  seam.position.set(0, 1.35, fD / 2 + 0.035)
-  fridge.add(seam)
-
-  for (const y of [1.72, 1.05, 0.5]) {
-    const h = box(0.02, 0.16, 0.03, handle)
-    h.position.set(fW / 2 - 0.1, y, fD / 2 + 0.04)
-    fridge.add(h)
-  }
-
-  const fKick = box(fW - 0.04, 0.08, fD - 0.06, kickMat)
-  fKick.position.set(0, 0.04, 0.02)
-  fridge.add(fKick)
-
+  const fridge = createFridge({
+    handle,
+    kickMat,
+  })
   fridge.rotation.y = Math.PI / 2
-  fridge.position.set(0, 0, cabD + sideW + fW / 2 + 0.04)
+  fridge.position.set(0, 0, cabD + sideW + 0.41 + 0.04)
   group.add(fridge)
 
   // Tuck into the front-right corner

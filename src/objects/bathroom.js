@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { WALL_H } from './roomConstants.js'
 
 function markInteractive(mesh) {
   mesh.userData.interactive = 'bathroom'
@@ -28,63 +29,150 @@ function wallBox(w, h, d, material) {
   return mesh
 }
 
+/**
+ * Two-piece toilet roughly based on TOTO Drake proportions
+ * (depth ≈ 0.71m, width ≈ 0.49m, seat ≈ 0.40m, tank top ≈ 0.72m).
+ * https://www.dimensions.com/element/toto-drake-two-piece-toilet
+ */
 function createToilet() {
   const toilet = new THREE.Group()
   toilet.name = 'toilet'
 
-  const porcelain = mat(0xf4f1ea, { roughness: 0.35 })
-  const seatMat = mat(0xe8e4dc, { roughness: 0.5 })
-  const chrome = mat(0xc8cdd2, { metalness: 0.85, roughness: 0.25 })
+  const china = mat(0xf6f4ef, { roughness: 0.22, metalness: 0.04 })
+  const seatMat = mat(0xe9e5dc, { roughness: 0.4 })
+  const chrome = mat(0xc8cdd2, { metalness: 0.88, roughness: 0.2 })
 
-  const base = markInteractive(
-    new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.18, 0.5), porcelain),
+  // Lathed bowl + concealed trapway — side silhouette, then elongated on Z
+  const profile = [
+    [0.01, 0.01],
+    [0.155, 0.015],
+    [0.18, 0.04],
+    [0.19, 0.12],
+    [0.185, 0.26],
+    [0.195, 0.34],
+    [0.21, 0.385],
+    [0.205, 0.4],
+    [0.155, 0.405],
+    [0.13, 0.39],
+    [0.115, 0.3],
+    [0.09, 0.23],
+    [0.05, 0.19],
+    [0.015, 0.17],
+  ].map(([x, y]) => new THREE.Vector2(x, y))
+
+  const body = markInteractive(
+    new THREE.Mesh(new THREE.LatheGeometry(profile, 48), china),
   )
-  base.position.set(0, 0.09, 0.02)
-  base.castShadow = true
-  base.receiveShadow = true
-  toilet.add(base)
+  body.scale.set(1, 1, 1.32)
+  body.position.set(0, 0, 0.1)
+  body.castShadow = true
+  body.receiveShadow = true
+  toilet.add(body)
 
-  const bowl = markInteractive(
-    new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.15, 0.16, 24), porcelain),
+  // Water (mostly hidden under the closed lid)
+  const water = markInteractive(
+    new THREE.Mesh(
+      new THREE.CircleGeometry(0.1, 24),
+      mat(0x5a8a96, { roughness: 0.12, metalness: 0.15, transparent: true, opacity: 0.45 }),
+    ),
   )
-  bowl.position.set(0, 0.24, 0.04)
-  bowl.castShadow = true
-  toilet.add(bowl)
+  water.scale.set(1, 1, 1.25)
+  water.rotation.x = -Math.PI / 2
+  water.position.set(0, 0.24, 0.14)
+  toilet.add(water)
 
-  const rim = markInteractive(
-    new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.025, 10, 24), porcelain),
-  )
-  rim.rotation.x = Math.PI / 2
-  rim.position.set(0, 0.32, 0.04)
-  toilet.add(rim)
-
+  // Closed seat — flat elongated oval
   const seat = markInteractive(
-    new THREE.Mesh(new THREE.TorusGeometry(0.155, 0.032, 10, 24), seatMat),
+    new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.022, 32), seatMat),
   )
-  seat.rotation.x = Math.PI / 2
-  seat.position.set(0, 0.335, 0.04)
+  seat.scale.set(1.05, 1, 1.45)
+  seat.position.set(0, 0.415, 0.12)
+  seat.castShadow = true
   toilet.add(seat)
 
+  // Lid — slightly larger oval, rests on seat
   const lid = markInteractive(
-    new THREE.Mesh(new THREE.CircleGeometry(0.17, 24), seatMat),
+    new THREE.Mesh(new THREE.CylinderGeometry(0.185, 0.185, 0.028, 32), seatMat),
   )
-  lid.rotation.x = -Math.PI / 2.15
-  lid.position.set(0, 0.42, -0.08)
+  lid.scale.set(1.08, 1, 1.48)
+  lid.position.set(0, 0.44, 0.1)
   lid.castShadow = true
   toilet.add(lid)
 
-  const tank = markInteractive(
-    new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.38, 0.16), porcelain),
+  // Hinge / seat mounting strip
+  const hinge = markInteractive(
+    new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.025, 0.045), seatMat),
   )
-  tank.position.set(0, 0.45, -0.22)
+  hinge.position.set(0, 0.425, -0.08)
+  toilet.add(hinge)
+
+  // Tank (separate piece sitting behind the bowl)
+  const tankW = 0.46
+  const tankH = 0.36
+  const tankD = 0.17
+  const tank = markInteractive(
+    new THREE.Mesh(new THREE.BoxGeometry(tankW, tankH, tankD), china),
+  )
+  tank.position.set(0, 0.4 + tankH / 2, -0.22)
   tank.castShadow = true
   toilet.add(tank)
 
-  const flush = markInteractive(
-    new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.04, 12), chrome),
+  const tankLid = markInteractive(
+    new THREE.Mesh(new THREE.BoxGeometry(tankW + 0.02, 0.03, tankD + 0.02), china),
   )
-  flush.position.set(0.12, 0.66, -0.22)
-  toilet.add(flush)
+  tankLid.position.set(0, 0.4 + tankH + 0.015, -0.22)
+  tankLid.castShadow = true
+  toilet.add(tankLid)
+
+  // Bowl-to-tank shelf / coupling
+  const coupling = markInteractive(
+    new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.08, 0.14), china),
+  )
+  coupling.position.set(0, 0.38, -0.08)
+  toilet.add(coupling)
+
+  // Classic side trip lever
+  const leverArm = markInteractive(
+    new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.012, 0.018), chrome),
+  )
+  leverArm.position.set(-tankW / 2 - 0.02, 0.58, -0.22)
+  toilet.add(leverArm)
+
+  const leverKnob = markInteractive(
+    new THREE.Mesh(new THREE.SphereGeometry(0.016, 12, 12), chrome),
+  )
+  leverKnob.position.set(-tankW / 2 - 0.06, 0.58, -0.22)
+  toilet.add(leverKnob)
+
+  const leverBase = markInteractive(
+    new THREE.Mesh(new THREE.CylinderGeometry(0.014, 0.014, 0.02, 10), chrome),
+  )
+  leverBase.rotation.z = Math.PI / 2
+  leverBase.position.set(-tankW / 2 + 0.01, 0.58, -0.22)
+  toilet.add(leverBase)
+
+  // Floor bolt caps
+  for (const x of [-0.1, 0.1]) {
+    const cap = markInteractive(
+      new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.012, 12), china),
+    )
+    cap.position.set(x, 0.025, -0.02)
+    toilet.add(cap)
+  }
+
+  // Supply shutoff + line
+  const valve = markInteractive(
+    new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.016, 0.035, 10), chrome),
+  )
+  valve.rotation.z = Math.PI / 2
+  valve.position.set(0.18, 0.1, -0.2)
+  toilet.add(valve)
+
+  const supply = markInteractive(
+    new THREE.Mesh(new THREE.CylinderGeometry(0.005, 0.005, 0.28, 8), chrome),
+  )
+  supply.position.set(0.18, 0.25, -0.2)
+  toilet.add(supply)
 
   return toilet
 }
@@ -167,8 +255,8 @@ function createMirror() {
   mirror.name = 'bathroomMirror'
 
   const frameMat = mat(0x3d2e22, { roughness: 0.6, metalness: 0.1 })
-  const mirrorW = 0.55
-  const mirrorH = 0.7
+  const mirrorW = 0.85
+  const mirrorH = 1.05
   const frameT = 0.035
   const depth = 0.035
 
@@ -278,9 +366,10 @@ function createShower() {
   const glassMat = new THREE.MeshStandardMaterial({
     color: 0xd8eef5,
     transparent: true,
-    opacity: 0.2,
+    opacity: 0.18,
     roughness: 0.12,
     metalness: 0.05,
+    side: THREE.DoubleSide,
     depthWrite: false,
   })
   const chrome = mat(0xc8cdd2, { metalness: 0.85, roughness: 0.25 })
@@ -305,7 +394,7 @@ function createShower() {
   lip.position.set(0, 0.05, 0)
   shower.add(lip)
 
-  // Tile backer on the two walls of the corner (local −X / −Z faces added by parent)
+  // Tile backer on the two walls of the corner (local −X / −Z)
   const backerA = new THREE.Mesh(
     new THREE.BoxGeometry(0.02, glassH, stallD),
     tile,
@@ -328,31 +417,65 @@ function createShower() {
   strip.position.set(-stallW / 2 + 0.025, 1.1, 0)
   shower.add(strip)
 
-  // Glass front + side
+  // Glass panes meet at a shared outer corner
+  const t = 0.02
+  const paneH = glassH - 0.14
+  const glassY = 0.1 + t + paneH / 2
+  const frontZ = stallD / 2 - 0.03
+  const sideX = stallW / 2 - 0.03
+  // Front pane: wall (−X) → corner; side pane: wall (−Z) → corner
+  const frontLeft = -stallW / 2 + 0.05
+  const sideBack = -stallD / 2 + 0.05
+  const frontGlassW = sideX - frontLeft
+  const sideGlassD = frontZ - sideBack
+  const frontCx = (frontLeft + sideX) / 2
+  const sideCz = (sideBack + frontZ) / 2
+
   const glassFront = new THREE.Mesh(
-    new THREE.PlaneGeometry(stallW - 0.08, glassH - 0.1),
+    new THREE.PlaneGeometry(frontGlassW - t * 0.5, paneH),
     glassMat,
   )
-  glassFront.position.set(0.02, glassH / 2 + 0.08, stallD / 2 - 0.02)
+  glassFront.position.set(frontCx, glassY, frontZ)
+  glassFront.renderOrder = 2
   shower.add(glassFront)
 
   const glassSide = new THREE.Mesh(
-    new THREE.PlaneGeometry(stallD - 0.1, glassH - 0.1),
+    new THREE.PlaneGeometry(sideGlassD - t * 0.5, paneH),
     glassMat,
   )
   glassSide.rotation.y = Math.PI / 2
-  glassSide.position.set(stallW / 2 - 0.02, glassH / 2 + 0.08, -0.02)
+  glassSide.position.set(sideX, glassY, sideCz)
+  glassSide.renderOrder = 2
   shower.add(glassSide)
 
-  // Metal frame rails
+  // Metal border — verticals fill the gap; horizontals own the corners (no double-stack)
   const rail = (w, h, d, x, y, z) => {
     const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), chrome)
     m.position.set(x, y, z)
+    m.castShadow = true
     shower.add(m)
   }
-  rail(stallW, 0.025, 0.025, 0, glassH + 0.04, stallD / 2 - 0.02)
-  rail(0.025, glassH, 0.025, stallW / 2 - 0.02, glassH / 2 + 0.06, stallD / 2 - 0.02)
-  rail(0.025, glassH, 0.025, stallW / 2 - 0.02, glassH / 2 + 0.06, -stallD / 2 + 0.04)
+
+  const yTop = glassY + paneH / 2 + t / 2
+  const yBot = glassY - paneH / 2 - t / 2
+  const yMid = glassY
+
+  // Three vertical posts (wall / corner / wall)
+  rail(t, paneH, t, frontLeft, yMid, frontZ)
+  rail(t, paneH, t, sideX, yMid, frontZ)
+  rail(t, paneH, t, sideX, yMid, sideBack)
+
+  // Front horizontals (wall → corner), own the corner cubes
+  const frontSpan = sideX - frontLeft + t
+  const frontMidX = (frontLeft + sideX) / 2
+  rail(frontSpan, t, t, frontMidX, yTop, frontZ)
+  rail(frontSpan, t, t, frontMidX, yBot, frontZ)
+
+  // Side horizontals (back wall → just shy of corner)
+  const sideSpan = frontZ - sideBack - t
+  const sideMidZ = (sideBack + frontZ) / 2
+  rail(t, t, sideSpan, sideX, yTop, sideMidZ)
+  rail(t, t, sideSpan, sideX, yBot, sideMidZ)
 
   // Shower arm + head
   const arm = new THREE.Mesh(
@@ -602,7 +725,7 @@ export function createBathroom() {
   const roomW = 3.3
   const roomD = 3.2
   // Match living-room wall height so the far wall reads congruent through the doorway
-  const wallH = 5
+  const wallH = WALL_H
   const wallT = 0.1
 
   const floor = markStructure(
@@ -672,22 +795,24 @@ export function createBathroom() {
   lintel.position.set(frontX, doorH, doorCenterZ)
   group.add(lintel)
 
-  // Hinge pivot locked to the left jamb — swung fully into the living room
+  // Hinge on the living-room face of the opening (bathroom is yawed π, so
+  // −X local is into the living room). Swing past 90° so the leaf clears the wall.
   const openDoor = createOpenDoor()
-  openDoor.position.set(frontX, 0, openingLeft)
-  openDoor.rotation.y = Math.PI / 2 + 0.38
+  openDoor.position.set(-0.08, 0, openingLeft)
+  openDoor.rotation.y = Math.PI / 2 + 0.18
   group.add(openDoor)
 
   const toilet = createToilet()
-  toilet.position.set(roomW - 0.65, 0, -1.05)
+  toilet.position.set(roomW - 0.65, 0, 1.05)
   toilet.rotation.y = -Math.PI / 2
   group.add(toilet)
 
   // Align vanity with the doorway so the focus dolly passes through the opening
   const vanityZ = doorCenterZ + 0.08
 
+  const sinkX = roomW - 0.6
   const sink = createSink()
-  sink.position.set(roomW - 0.6, 0, vanityZ)
+  sink.position.set(sinkX, 0, vanityZ)
   sink.rotation.y = -Math.PI / 2
   group.add(sink)
 
@@ -696,16 +821,17 @@ export function createBathroom() {
   mirror.rotation.y = -Math.PI / 2
   group.add(mirror)
 
-  const matMesh = markInteractive(
+  // Bath mat — larger, centered on the vanity (long axis along Z)
+  const bathMat = markStructure(
     new THREE.Mesh(
-      new THREE.PlaneGeometry(0.55, 0.35),
-      mat(0x6a8f7a, { roughness: 0.95 }),
+      new THREE.PlaneGeometry(0.58, 0.95),
+      mat(0x5f8a72, { roughness: 0.95 }),
     ),
   )
-  matMesh.rotation.x = -Math.PI / 2
-  matMesh.position.set(0.7, 0.015, vanityZ)
-  matMesh.receiveShadow = true
-  group.add(matMesh)
+  bathMat.rotation.x = -Math.PI / 2
+  bathMat.position.set(sinkX - 0.48, 0.014, vanityZ)
+  bathMat.receiveShadow = true
+  group.add(bathMat)
 
   const vanityLight = new THREE.PointLight(0xe8efe9, 0.18, 3.5, 2)
   vanityLight.position.set(roomW - 0.5, 1.95, vanityZ)
@@ -716,21 +842,22 @@ export function createBathroom() {
   ceilingLight.position.set(roomW * 0.45, wallH - 0.02, 0.1)
   group.add(ceilingLight)
 
-  // Shower in the north-back corner (clear of toilet / vanity)
+  // Shower in the south-back corner (clear of toilet / vanity)
   const shower = createShower()
-  shower.position.set(roomW - 0.62, 0, roomD / 2 - 0.58)
-  shower.rotation.y = Math.PI
+  shower.position.set(roomW - 0.62, 0, -(roomD / 2 - 0.58))
+  // −π/2 puts tile backers on south (−Z) + back (+X); glass opens into the room
+  shower.rotation.y = -Math.PI / 2
   group.add(shower)
 
   // —— Side-wall decor (visible through the open doorway) ——
-  // South wall (−Z): floating shelf + plant
+  // North wall (+Z): floating shelf + plant (clear of toilet)
   const shelf = markStructure(
     new THREE.Mesh(
       new THREE.BoxGeometry(0.55, 0.04, 0.16),
       mat(0x6b5340, { roughness: 0.7 }),
     ),
   )
-  shelf.position.set(roomW * 0.45, 1.15, -roomD / 2 + wallT + 0.1)
+  shelf.position.set(roomW * 0.45, 1.15, roomD / 2 - wallT - 0.1)
   shelf.castShadow = true
   shelf.receiveShadow = true
   group.add(shelf)
@@ -741,30 +868,29 @@ export function createBathroom() {
       mat(0x5a4430, { roughness: 0.65 }),
     ),
   )
-  shelfBracket.position.set(roomW * 0.45, 1.1, -roomD / 2 + wallT + 0.03)
+  shelfBracket.position.set(roomW * 0.45, 1.1, roomD / 2 - wallT - 0.03)
   group.add(shelfBracket)
 
   const shelfPlant = createBathPlant({ scale: 0.95 })
-  shelfPlant.position.set(roomW * 0.45, 1.17, -roomD / 2 + wallT + 0.1)
+  shelfPlant.position.set(roomW * 0.45, 1.17, roomD / 2 - wallT - 0.1)
   group.add(shelfPlant)
 
   const print = createWallPrint({ width: 0.28, height: 0.36 })
-  print.position.set(roomW * 0.72, 1.65, -roomD / 2 + wallT + 0.025)
+  print.position.set(roomW * 0.72, 1.65, roomD / 2 - wallT - 0.025)
+  print.rotation.y = Math.PI
   group.add(print)
 
-  // North wall (+Z): towel bar (kept clear of the shower in the back corner)
+  // South wall (−Z): towel bar (kept clear of the shower in the back corner)
   const towels = createTowelBar()
-  towels.position.set(roomW * 0.32, 1.35, roomD / 2 - wallT - 0.04)
-  towels.rotation.y = Math.PI
+  towels.position.set(roomW * 0.32, 1.35, -roomD / 2 + wallT + 0.04)
   group.add(towels)
 
   const print2 = createWallPrint({ width: 0.24, height: 0.3 })
-  print2.position.set(roomW * 0.32, 1.85, roomD / 2 - wallT - 0.025)
-  print2.rotation.y = Math.PI
+  print2.position.set(roomW * 0.32, 1.85, -roomD / 2 + wallT + 0.025)
   group.add(print2)
 
   const floorPlant = createBathPlant({ scale: 1.15 })
-  floorPlant.position.set(0.45, 0, roomD / 2 - wallT - 0.22)
+  floorPlant.position.set(0.45, 0, -roomD / 2 + wallT + 0.22)
   group.add(floorPlant)
 
   // Living-room −X edge, shifted toward the window wall; yaw so the doorway faces in

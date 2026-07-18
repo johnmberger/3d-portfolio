@@ -169,19 +169,30 @@ function createFastFoodBag(name = 'John Berger') {
   right.castShadow = true
   bag.add(right)
 
-  // Folded rim
-  const rim = new THREE.Mesh(new THREE.BoxGeometry(w + 0.008, 0.018, d + 0.008), creaseMat)
-  rim.position.y = h + t + 0.006
-  rim.castShadow = true
-  bag.add(rim)
+  // Open top — thin folded lip around the rim (no solid cap / fill)
+  const lipH = 0.012
+  const lipY = h + t - lipH / 2 + 0.002
+  const frontLip = new THREE.Mesh(new THREE.BoxGeometry(w, lipH, t), creaseMat)
+  frontLip.position.set(0, lipY, d / 2 - t / 2)
+  bag.add(frontLip)
+  const backLip = new THREE.Mesh(new THREE.BoxGeometry(w, lipH, t), creaseMat)
+  backLip.position.set(0, lipY, -d / 2 + t / 2)
+  bag.add(backLip)
+  const leftLip = new THREE.Mesh(new THREE.BoxGeometry(t, lipH, d - t * 2), creaseMat)
+  leftLip.position.set(-w / 2 + t / 2, lipY, 0)
+  bag.add(leftLip)
+  const rightLip = new THREE.Mesh(new THREE.BoxGeometry(t, lipH, d - t * 2), creaseMat)
+  rightLip.position.set(w / 2 - t / 2, lipY, 0)
+  bag.add(rightLip)
 
-  // Soft interior fill so the open top reads as a bag
-  const fill = new THREE.Mesh(
-    new THREE.BoxGeometry(w - t * 2.5, h * 0.55, d - t * 2.5),
-    mat(0xa88858, { roughness: 0.95 }),
+  // Darker inside faces so the hollow opening reads from above
+  const innerMat = mat(0x8a6a3e, { roughness: 0.95, side: THREE.BackSide })
+  const inner = new THREE.Mesh(
+    new THREE.BoxGeometry(w - t * 2, h - 0.01, d - t * 2),
+    innerMat,
   )
-  fill.position.y = t + (h * 0.55) / 2
-  bag.add(fill)
+  inner.position.y = t + (h - 0.01) / 2
+  bag.add(inner)
 
   const label = new THREE.Mesh(
     new THREE.PlaneGeometry(w * 0.88, h * 0.78),
@@ -194,53 +205,148 @@ function createFastFoodBag(name = 'John Berger') {
   label.position.set(0, h * 0.52 + t, d / 2 + 0.001)
   bag.add(label)
 
-  // Twisted-paper style handles
-  const handleMat = mat(0x8a6a40, { roughness: 0.85 })
-  const handleGeo = new THREE.TorusGeometry(0.028, 0.004, 6, 12, Math.PI)
-  for (const x of [-0.028, 0.028]) {
-    const handle = new THREE.Mesh(handleGeo, handleMat)
-    handle.rotation.y = Math.PI / 2
-    handle.rotation.z = Math.PI
-    handle.position.set(x, h + t + 0.03, 0)
-    handle.castShadow = true
-    bag.add(handle)
-  }
-
   return bag
 }
 
 function createDiningChair() {
   const chair = new THREE.Group()
-  const wood = mat(0x7a5c42, { roughness: 0.7 })
-  const seatMat = mat(0xc4b09a, { roughness: 0.85 })
+  chair.name = 'diningChair'
 
-  const seat = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.04, 0.4), seatMat)
-  seat.position.y = 0.45
-  seat.castShadow = true
-  seat.receiveShadow = true
-  chair.add(seat)
+  const wood = mat(0x6e5340, { roughness: 0.58, metalness: 0.04 })
+  const woodDark = mat(0x5a4332, { roughness: 0.62 })
+  const seatMat = mat(0xc8b8a4, { roughness: 0.88 })
+  const seatDeep = mat(0xb8a894, { roughness: 0.9 })
 
-  const back = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.42, 0.04), wood)
-  back.position.set(0, 0.68, -0.18)
-  back.castShadow = true
-  chair.add(back)
+  const seatW = 0.4
+  const seatD = 0.38
+  const seatY = 0.46
+  const legH = seatY - 0.02
 
-  const slat = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.06, 0.02), wood)
-  slat.position.set(0, 0.72, -0.155)
-  chair.add(slat)
-
-  const legGeo = new THREE.CylinderGeometry(0.016, 0.02, 0.44, 8)
-  for (const [x, z] of [
-    [0.15, 0.14],
-    [-0.15, 0.14],
-    [0.15, -0.14],
-    [-0.15, -0.14],
-  ]) {
-    const leg = new THREE.Mesh(legGeo, wood)
-    leg.position.set(x, 0.22, z)
+  // Slightly tapered square legs
+  const legTop = 0.028
+  const legBot = 0.022
+  const legInset = 0.04
+  const legs = [
+    [seatW / 2 - legInset, seatD / 2 - legInset],
+    [-(seatW / 2 - legInset), seatD / 2 - legInset],
+    [seatW / 2 - legInset, -(seatD / 2 - legInset)],
+    [-(seatW / 2 - legInset), -(seatD / 2 - legInset)],
+  ]
+  for (const [x, z] of legs) {
+    const leg = new THREE.Mesh(
+      new THREE.BoxGeometry(legTop, legH, legTop),
+      wood,
+    )
+    // Taper via scale at bottom — approximate with uniform + foot
+    leg.scale.set(1, 1, 1)
+    leg.position.set(x, legH / 2, z)
     leg.castShadow = true
     chair.add(leg)
+
+    const foot = new THREE.Mesh(
+      new THREE.BoxGeometry(legBot, 0.02, legBot),
+      woodDark,
+    )
+    foot.position.set(x, 0.01, z)
+    chair.add(foot)
   }
+
+  // Stretchers (H + side rails)
+  const stretcherY = 0.18
+  const sideStretcher = new THREE.Mesh(
+    new THREE.BoxGeometry(0.016, 0.016, seatD - legInset * 2 - 0.02),
+    woodDark,
+  )
+  for (const x of [seatW / 2 - legInset, -(seatW / 2 - legInset)]) {
+    const s = sideStretcher.clone()
+    s.position.set(x, stretcherY, 0)
+    s.castShadow = true
+    chair.add(s)
+  }
+  const cross = new THREE.Mesh(
+    new THREE.BoxGeometry(seatW - legInset * 2 - 0.02, 0.014, 0.014),
+    woodDark,
+  )
+  cross.position.set(0, stretcherY, 0.02)
+  cross.castShadow = true
+  chair.add(cross)
+
+  // Seat apron under the cushion
+  const apron = new THREE.Mesh(
+    new THREE.BoxGeometry(seatW - 0.02, 0.04, seatD - 0.02),
+    wood,
+  )
+  apron.position.set(0, seatY - 0.03, 0.01)
+  apron.castShadow = true
+  chair.add(apron)
+
+  // Upholstered seat — soft top + thinner base
+  const cushion = new THREE.Mesh(
+    new THREE.BoxGeometry(seatW - 0.04, 0.045, seatD - 0.05),
+    seatMat,
+  )
+  cushion.position.set(0, seatY + 0.01, 0.015)
+  cushion.castShadow = true
+  cushion.receiveShadow = true
+  chair.add(cushion)
+
+  const piped = new THREE.Mesh(
+    new THREE.BoxGeometry(seatW - 0.06, 0.012, seatD - 0.07),
+    seatDeep,
+  )
+  piped.position.set(0, seatY + 0.035, 0.015)
+  chair.add(piped)
+
+  // Rounded front lip on the seat
+  const lip = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.022, 0.022, seatW - 0.06, 10, 1, false, 0, Math.PI),
+    seatMat,
+  )
+  lip.rotation.z = Math.PI / 2
+  lip.rotation.y = Math.PI
+  lip.position.set(0, seatY + 0.01, seatD / 2 - 0.04)
+  chair.add(lip)
+
+  // Back posts
+  const backH = 0.48
+  const postY = seatY + backH / 2 + 0.02
+  const postZ = -(seatD / 2 - 0.02)
+  for (const x of [seatW / 2 - 0.05, -(seatW / 2 - 0.05)]) {
+    const post = new THREE.Mesh(
+      new THREE.BoxGeometry(0.026, backH, 0.026),
+      wood,
+    )
+    post.position.set(x, postY, postZ)
+    post.castShadow = true
+    chair.add(post)
+  }
+
+  // Top crest rail
+  const crest = new THREE.Mesh(
+    new THREE.BoxGeometry(seatW - 0.06, 0.032, 0.028),
+    wood,
+  )
+  crest.position.set(0, seatY + backH + 0.01, postZ)
+  crest.castShadow = true
+  chair.add(crest)
+
+  // Horizontal back slats
+  const slatGeo = new THREE.BoxGeometry(seatW - 0.1, 0.028, 0.012)
+  for (const t of [0.22, 0.42, 0.62, 0.8]) {
+    const slat = new THREE.Mesh(slatGeo, woodDark)
+    slat.position.set(0, seatY + 0.04 + t * backH, postZ + 0.01)
+    slat.castShadow = true
+    chair.add(slat)
+  }
+
+  // Lumbar pad behind the lower slats
+  const lumbar = new THREE.Mesh(
+    new THREE.BoxGeometry(seatW - 0.14, 0.14, 0.02),
+    seatMat,
+  )
+  lumbar.position.set(0, seatY + 0.2, postZ + 0.022)
+  lumbar.castShadow = true
+  chair.add(lumbar)
 
   return chair
 }

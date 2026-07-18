@@ -135,6 +135,19 @@ function buildBirdLeafShape() {
   return s
 }
 
+/** Cordate / pointed — trailing pothos */
+function buildPothosLeafShape() {
+  const s = new THREE.Shape()
+  s.moveTo(0, 0)
+  s.bezierCurveTo(-0.14, 0.02, -0.3, 0.14, -0.3, 0.38)
+  s.bezierCurveTo(-0.3, 0.58, -0.2, 0.78, -0.08, 0.92)
+  s.bezierCurveTo(-0.04, 0.98, -0.015, 1.02, 0, 1.04)
+  s.bezierCurveTo(0.015, 1.02, 0.04, 0.98, 0.08, 0.92)
+  s.bezierCurveTo(0.2, 0.78, 0.3, 0.58, 0.3, 0.38)
+  s.bezierCurveTo(0.3, 0.14, 0.14, 0.02, 0, 0)
+  return s
+}
+
 function createMonsteraLeafGeometry() {
   return geometryFromSvg(MONSTERA_SVG, 'monstera', {
     curl: 0.55,
@@ -167,12 +180,20 @@ function createBirdLeafGeometry() {
   })
 }
 
+function createPothosLeafGeometry() {
+  return geometryFromShapeBuilder('pothos', buildPothosLeafShape, {
+    curl: 0.5,
+    tipLift: 0.06,
+    curveSegments: 14,
+  })
+}
+
 function createPot({ potColor, potScale = 1, tall = false }) {
   const group = new THREE.Group()
   const potMat = new THREE.MeshStandardMaterial({
     color: potColor,
-    roughness: 0.8,
-    metalness: 0.05,
+    roughness: 0.92,
+    metalness: 0,
   })
   const soilMat = new THREE.MeshStandardMaterial({ color: 0x3a2f24, roughness: 1 })
 
@@ -307,7 +328,7 @@ function leafMaterials(leafColor, leafColorAlt, veinColor = 0x1e4a28) {
 // —— Monstera ——
 
 function createMonstera({
-  potColor = 0xc4a484,
+  potColor = 0xc4683a,
   leafColor = 0x2f6b3c,
   leafColorAlt = 0x3a7a45,
   height = 1.4,
@@ -377,7 +398,7 @@ function createMonstera({
 // —— Snake plant (Sansevieria) ——
 
 function createSnakePlant({
-  potColor = 0xcfc6b8,
+  potColor = 0xd4784a,
   leafCount = 7,
   potScale = 1,
   height = 0.95,
@@ -419,7 +440,7 @@ function createSnakePlant({
     blade.castShadow = true
     blade.receiveShadow = true
 
-    // Yellow margin strip (read as variegation at a glance)
+    // Yellow margin on local −Z — keep that side facing the pot center
     const edge = new THREE.Mesh(createSnakeLeafGeometry(), margin)
     edge.scale.set(0.58 + (i % 3) * 0.08, leafH * 0.98, 0.92)
     edge.position.z = -0.002
@@ -428,7 +449,8 @@ function createSnakePlant({
     shoot.add(blade, edge)
     shoot.position.set(Math.cos(angle) * 0.08, soilY, Math.sin(angle) * 0.08)
     shoot.rotation.order = 'YXZ'
-    shoot.rotation.y = angle
+    // local +Z → radial out, so yellow (−Z) always faces inward
+    shoot.rotation.y = Math.PI / 2 - angle
     shoot.rotation.x = lean
     shoot.rotation.z = (i % 2 === 0 ? -0.05 : 0.05)
     foliage.add(shoot)
@@ -441,7 +463,7 @@ function createSnakePlant({
 // —— Fiddle-leaf fig ——
 
 function createFiddleLeafFig({
-  potColor = 0xb08968,
+  potColor = 0xb85c38,
   leafColor = 0x1f4d2e,
   leafColorAlt = 0x2f6b3c,
   height = 1.35,
@@ -508,13 +530,274 @@ function createFiddleLeafFig({
 
 // —— Bird of paradise ——
 
+function extrudePetal(shape, { depth = 0.008, scale = 0.14, mat }) {
+  const geo = new THREE.ExtrudeGeometry(shape, {
+    depth,
+    bevelEnabled: true,
+    bevelThickness: depth * 0.35,
+    bevelSize: depth * 0.25,
+    bevelSegments: 2,
+    curveSegments: 10,
+  })
+  geo.translate(0, 0, -depth / 2)
+  geo.scale(scale, scale, 1)
+  // Base at origin, tip toward +Y
+  geo.computeBoundingBox()
+  geo.translate(0, -geo.boundingBox.min.y, 0)
+  const mesh = new THREE.Mesh(geo, mat)
+  mesh.castShadow = true
+  return mesh
+}
+
+/** Long keeled orange sepal — plume-like crest. */
+function buildOrangeSepalShape() {
+  const s = new THREE.Shape()
+  // Narrow base → wide mid → sharp tip (real sepals are ~7–10 cm, lanceolate)
+  s.moveTo(0, 0)
+  s.bezierCurveTo(-0.06, 0.04, -0.14, 0.22, -0.12, 0.45)
+  s.bezierCurveTo(-0.1, 0.68, -0.05, 0.88, 0, 1)
+  s.bezierCurveTo(0.05, 0.88, 0.1, 0.68, 0.12, 0.45)
+  s.bezierCurveTo(0.14, 0.22, 0.06, 0.04, 0, 0)
+  return s
+}
+
+/** Fused blue petals — narrow arrow / landing tongue. */
+function buildBlueArrowShape() {
+  const s = new THREE.Shape()
+  s.moveTo(0, 0)
+  s.lineTo(-0.07, 0.06)
+  s.bezierCurveTo(-0.11, 0.25, -0.12, 0.5, -0.08, 0.72)
+  s.lineTo(0, 1)
+  s.lineTo(0.08, 0.72)
+  s.bezierCurveTo(0.12, 0.5, 0.11, 0.25, 0.07, 0.06)
+  s.lineTo(0, 0)
+  return s
+}
+
+/**
+ * Strelitzia bloom from botanical refs:
+ * reed stem → hard right-angle spathe (beak) → orange crest + blue arrow
+ * all erupting from the spathe mouth at the stem junction.
+ */
+function createBirdFlower(scale = 1) {
+  const flower = new THREE.Group()
+  flower.name = 'birdFlower'
+
+  const stemMat = new THREE.MeshStandardMaterial({
+    color: 0x5a6a48,
+    roughness: 0.82,
+  })
+  const spatheMat = new THREE.MeshStandardMaterial({
+    color: 0x5a7040,
+    roughness: 0.7,
+  })
+  const spatheDeepMat = new THREE.MeshStandardMaterial({
+    color: 0x3e522e,
+    roughness: 0.75,
+  })
+  const rimMat = new THREE.MeshStandardMaterial({
+    color: 0x8a4060,
+    roughness: 0.6,
+  })
+  const orangeMat = new THREE.MeshStandardMaterial({
+    color: 0xf07818,
+    roughness: 0.45,
+    emissive: 0x5a2008,
+    emissiveIntensity: 0.18,
+    side: THREE.DoubleSide,
+  })
+  const orangeHiMat = new THREE.MeshStandardMaterial({
+    color: 0xffa030,
+    roughness: 0.42,
+    emissive: 0x4a1808,
+    emissiveIntensity: 0.12,
+    side: THREE.DoubleSide,
+  })
+  const blueMat = new THREE.MeshStandardMaterial({
+    color: 0x2e4cb0,
+    roughness: 0.42,
+    emissive: 0x0a1840,
+    emissiveIntensity: 0.1,
+    side: THREE.DoubleSide,
+  })
+  const blueTipMat = new THREE.MeshStandardMaterial({
+    color: 0x1a2e78,
+    roughness: 0.48,
+    side: THREE.DoubleSide,
+  })
+
+  const s = scale
+  const stemLen = 0.78 * s
+
+  // —— Reed-like scape ——
+  const stem = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.012 * s, 0.02 * s, stemLen, 10),
+    stemMat,
+  )
+  stem.position.y = stemLen / 2
+  stem.castShadow = true
+  flower.add(stem)
+
+  // —— Head at stem tip: spathe at ~90° (the bird’s beak) ——
+  const head = new THREE.Group()
+  head.position.y = stemLen
+  flower.add(head)
+
+  // Elbow where stem meets spathe
+  const elbow = new THREE.Mesh(
+    new THREE.SphereGeometry(0.032 * s, 12, 12),
+    stemMat,
+  )
+  elbow.scale.set(1.15, 0.9, 1.2)
+  elbow.castShadow = true
+  head.add(elbow)
+
+  // Short horizontal neck into the spathe (makes the right-angle read)
+  const neck = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.022 * s, 0.026 * s, 0.05 * s, 10),
+    stemMat,
+  )
+  neck.rotation.z = Math.PI / 2
+  neck.position.set(0.03 * s, 0, 0)
+  head.add(neck)
+
+  // Spathe extends +X from the elbow — stiff boat / canoe
+  const spatheLen = 0.24 * s
+  const spathe = new THREE.Group()
+  spathe.position.set(0.05 * s, -0.01 * s, 0)
+  head.add(spathe)
+
+  // Lower hull
+  const hull = new THREE.Mesh(
+    new THREE.CapsuleGeometry(0.038 * s, spatheLen * 0.45, 6, 12),
+    spatheMat,
+  )
+  hull.rotation.z = Math.PI / 2
+  hull.scale.set(1, 0.38, 1.35)
+  hull.position.set(spatheLen * 0.38, -0.012 * s, 0)
+  hull.castShadow = true
+  spathe.add(hull)
+
+  // Flared upper walls of the boat (open trough feel)
+  for (const side of [-1, 1]) {
+    const wall = new THREE.Mesh(
+      new THREE.BoxGeometry(spatheLen * 0.78, 0.028 * s, 0.012 * s),
+      spatheDeepMat,
+    )
+    wall.position.set(spatheLen * 0.35, 0.012 * s, side * 0.032 * s)
+    wall.rotation.x = side * 0.45
+    spathe.add(wall)
+  }
+
+  // Floor of the trough — keeps sepals visually seated
+  const floor = new THREE.Mesh(
+    new THREE.BoxGeometry(spatheLen * 0.72, 0.014 * s, 0.048 * s),
+    spatheDeepMat,
+  )
+  floor.position.set(spatheLen * 0.34, -0.004 * s, 0)
+  spathe.add(floor)
+
+  // Pink/purple upper rim along the open edge
+  const rim = new THREE.Mesh(
+    new THREE.BoxGeometry(spatheLen * 0.7, 0.008 * s, 0.055 * s),
+    rimMat,
+  )
+  rim.position.set(spatheLen * 0.32, 0.028 * s, 0)
+  spathe.add(rim)
+
+  // Sharp beak tip
+  const beak = new THREE.Mesh(
+    new THREE.ConeGeometry(0.03 * s, 0.085 * s, 8),
+    rimMat,
+  )
+  beak.rotation.z = -Math.PI / 2
+  beak.scale.set(1, 1, 0.7)
+  beak.position.set(spatheLen * 0.82, 0, 0)
+  beak.castShadow = true
+  spathe.add(beak)
+
+  // —— Bloom cluster: everything emerges from the spathe mouth ——
+  // (proximal opening, above the elbow / start of the boat)
+  const mouth = new THREE.Group()
+  mouth.position.set(0.02 * s, 0.02 * s, 0)
+  spathe.add(mouth)
+
+  // Soft tissue plug sealing flower bases into the spathe
+  const plug = new THREE.Mesh(
+    new THREE.SphereGeometry(0.022 * s, 10, 10),
+    new THREE.MeshStandardMaterial({ color: 0xc8b8a0, roughness: 0.75 }),
+  )
+  plug.scale.set(1.5, 0.85, 1.2)
+  mouth.add(plug)
+
+  const sepalLen = 0.155 * s
+  // Two erect posterior sepals (the crest) + one more forward anterior sepal
+  const sepalLayout = [
+    { mat: orangeMat, yaw: -0.42, pitch: 0.15, roll: 1.15 },
+    { mat: orangeHiMat, yaw: 0.42, pitch: -0.15, roll: 1.2 },
+    { mat: orangeMat, yaw: 0.05, pitch: 0, roll: 0.55 },
+  ]
+  for (const { mat, yaw, pitch, roll } of sepalLayout) {
+    const sepal = extrudePetal(buildOrangeSepalShape(), {
+      depth: 0.01 * s,
+      scale: sepalLen,
+      mat,
+    })
+    // Root buried in the mouth plug
+    sepal.position.set(0.005 * s, 0.005 * s, 0)
+    sepal.rotation.order = 'YXZ'
+    sepal.rotation.set(pitch, yaw, roll)
+    mouth.add(sepal)
+  }
+
+  // Blue arrow tongue — horizontal, just above the spathe floor, tip toward beak
+  const tongue = extrudePetal(buildBlueArrowShape(), {
+    depth: 0.012 * s,
+    scale: 0.15 * s,
+    mat: blueMat,
+  })
+  tongue.position.set(0.015 * s, 0.008 * s, 0)
+  // Tip points +X along the spathe
+  tongue.rotation.order = 'ZYX'
+  tongue.rotation.z = -Math.PI / 2
+  tongue.rotation.y = 0
+  mouth.add(tongue)
+
+  // Darker tip overlay for the arrow point
+  const tongueTip = new THREE.Mesh(
+    new THREE.ConeGeometry(0.012 * s, 0.04 * s, 6),
+    blueTipMat,
+  )
+  tongueTip.rotation.z = -Math.PI / 2
+  tongueTip.position.set(0.15 * s, 0.01 * s, 0)
+  mouth.add(tongueTip)
+
+  // Tiny white stigma threads at tongue tip (style ends)
+  const stigmaMat = new THREE.MeshStandardMaterial({
+    color: 0xe8e4dc,
+    roughness: 0.6,
+  })
+  for (const z of [-0.006, 0, 0.006]) {
+    const stigma = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.0018 * s, 0.0018 * s, 0.028 * s, 5),
+      stigmaMat,
+    )
+    stigma.rotation.z = Math.PI / 2
+    stigma.position.set(0.17 * s, 0.012 * s, z * s)
+    mouth.add(stigma)
+  }
+
+  return flower
+}
+
 function createBirdOfParadise({
-  potColor = 0xd4b896,
+  potColor = 0xc4683a,
   leafColor = 0x2a6338,
   leafColorAlt = 0x3d7a48,
   height = 1.2,
   leafCount = 5,
   potScale = 1.2,
+  flowerCount = 2,
 } = {}) {
   const plant = new THREE.Group()
   plant.name = 'birdOfParadise'
@@ -551,19 +834,38 @@ function createBirdOfParadise({
     shoot.position.set(Math.cos(angle) * 0.06, soilY, Math.sin(angle) * 0.06)
     shootDir.set(Math.cos(angle) * Math.sin(lean), Math.cos(lean), Math.sin(angle) * Math.sin(lean))
     shoot.quaternion.setFromUnitVectors(yAxis, shootDir)
-    // Fan the leaves open
     shoot.rotateY((i - leafCount / 2) * 0.15)
     foliage.add(shoot)
   }
 
-  // Unused height kept for API consistency with other plants
+  // Blooms rise above the leaf fan (real scapes overtop the foliage)
+  for (let i = 0; i < flowerCount; i++) {
+    const flower = createBirdFlower(0.9 + i * 0.08)
+    const angle = 0.9 + i * 1.55
+    const lean = 0.08 + i * 0.04
+    flower.position.set(
+      Math.cos(angle) * 0.03,
+      soilY,
+      Math.sin(angle) * 0.03,
+    )
+    shootDir.set(
+      Math.cos(angle) * Math.sin(lean),
+      Math.cos(lean),
+      Math.sin(angle) * Math.sin(lean),
+    )
+    flower.quaternion.setFromUnitVectors(yAxis, shootDir)
+    // Present the beak silhouette in profile
+    flower.rotateY(i * 1.1 + 0.6)
+    foliage.add(flower)
+  }
+
   void height
   plant.add(foliage)
   return plant
 }
 
 function createHangingPlanter({
-  potColor = 0xc4a484,
+  potColor = 0xc4683a,
   leafColor = 0x2f6b3c,
   leafColorAlt = 0x4a8a55,
   trailLength = 0.55,
@@ -574,7 +876,8 @@ function createHangingPlanter({
 
   const potMat = new THREE.MeshStandardMaterial({
     color: potColor,
-    roughness: 0.8,
+    roughness: 0.92,
+    metalness: 0,
   })
   const cordMat = new THREE.MeshStandardMaterial({
     color: 0xd4c4a8,
@@ -604,25 +907,33 @@ function createHangingPlanter({
   hook.position.y = 0
   plant.add(hook)
 
-  // Three cords to the rim
+  const potY = -cordLength - 0.04
+  const rimY = potY + 0.055
+  const rimAttachR = 0.092
+
+  // Three cords converge at the hook and splay to the pot rim
+  const cordTop = new THREE.Vector3(0, -0.012, 0)
+  const yAxis = new THREE.Vector3(0, 1, 0)
   for (let i = 0; i < 3; i++) {
-    const a = (i / 3) * Math.PI * 2
+    const a = (i / 3) * Math.PI * 2 + 0.15
+    const cordBot = new THREE.Vector3(
+      Math.cos(a) * rimAttachR,
+      rimY,
+      Math.sin(a) * rimAttachR,
+    )
+    const dir = new THREE.Vector3().subVectors(cordBot, cordTop)
+    const len = dir.length()
+    const mid = new THREE.Vector3().addVectors(cordTop, cordBot).multiplyScalar(0.5)
+
     const cord = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.004, 0.004, cordLength, 5),
+      new THREE.CylinderGeometry(0.0035, 0.0035, len, 5),
       cordMat,
     )
-    cord.position.set(
-      Math.cos(a) * 0.06,
-      -cordLength / 2,
-      Math.sin(a) * 0.06,
-    )
-    // Slight splay
-    cord.rotation.z = Math.cos(a) * 0.12
-    cord.rotation.x = Math.sin(a) * 0.12
+    cord.position.copy(mid)
+    cord.quaternion.setFromUnitVectors(yAxis, dir.normalize())
     plant.add(cord)
   }
 
-  const potY = -cordLength - 0.04
   const pot = new THREE.Mesh(
     new THREE.CylinderGeometry(0.1, 0.08, 0.12, 14),
     potMat,
@@ -636,7 +947,7 @@ function createHangingPlanter({
     potMat,
   )
   rim.rotation.x = Math.PI / 2
-  rim.position.y = potY + 0.055
+  rim.position.y = rimY
   plant.add(rim)
 
   const soil = new THREE.Mesh(
@@ -646,46 +957,82 @@ function createHangingPlanter({
   soil.position.y = potY + 0.05
   plant.add(soil)
 
-  // Trailing foliage
+  // Foliage emerges from the soil, drapes over the rim, then trails down
   const foliage = new THREE.Group()
   foliage.name = 'foliage'
-  foliage.position.y = potY
+  foliage.position.y = potY + 0.05
 
-  for (let i = 0; i < 7; i++) {
-    const a = (i / 7) * Math.PI * 2 + 0.2
+  const rimR = 0.1
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2 + 0.18
     const trail = new THREE.Group()
-    const segments = 3 + (i % 2)
+    const segments = 4 + (i % 3)
+    const side = i % 2 === 0 ? 1 : -1
     for (let s = 0; s < segments; s++) {
+      const t = s / Math.max(segments - 1, 1)
+      // Inside → over rim → hang outside (never through the pot wall)
+      const radius = rimR * (0.55 + t * 0.55) + t * t * 0.08
+      const y =
+        0.03 * (1 - t) +
+        Math.sin(Math.min(t, 1) * Math.PI) * 0.02 -
+        t * trailLength * (0.85 + (i % 3) * 0.06)
+
+      const leafScale = 0.085 + (1 - t) * 0.02 + (s % 2) * 0.015
       const leaf = new THREE.Mesh(
-        new THREE.PlaneGeometry(0.07 + (s % 2) * 0.02, 0.1),
+        createPothosLeafGeometry(),
         i % 2 === 0 ? leafMat : leafMatAlt,
       )
-      leaf.position.set(
-        Math.cos(a) * (0.05 + s * 0.015),
-        -0.08 - s * (trailLength / segments),
-        Math.sin(a) * (0.05 + s * 0.015),
-      )
+      leaf.scale.setScalar(leafScale)
+      leaf.position.set(Math.cos(a) * radius, y, Math.sin(a) * radius)
+      // Blade face-out, tip sideways (not dangling tip-down)
+      leaf.rotation.order = 'YXZ'
       leaf.rotation.y = a
-      leaf.rotation.x = 0.4 + s * 0.15
-      leaf.rotation.z = (i % 2 === 0 ? -0.2 : 0.2) + s * 0.05
+      leaf.rotation.x = 0.25 + t * 0.2
+      leaf.rotation.z = side * (Math.PI / 2 - 0.15) + (t - 0.5) * 0.2
       leaf.castShadow = false
       trail.add(leaf)
     }
     foliage.add(trail)
   }
 
-  // A few upright leaves from the pot
-  for (let i = 0; i < 4; i++) {
-    const a = (i / 4) * Math.PI * 2
+  // Crown leaves rising from the soil and spilling over the rim
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * Math.PI * 2 + 0.4
+    const side = i % 2 === 0 ? 1 : -1
     const upright = new THREE.Mesh(
-      new THREE.PlaneGeometry(0.08, 0.16),
+      createPothosLeafGeometry(),
       i % 2 === 0 ? leafMat : leafMatAlt,
     )
-    upright.position.set(Math.cos(a) * 0.04, 0.12, Math.sin(a) * 0.04)
+    upright.scale.setScalar(0.11 + (i % 2) * 0.025)
+    upright.position.set(
+      Math.cos(a) * (rimR * 0.45),
+      0.02,
+      Math.sin(a) * (rimR * 0.45),
+    )
+    upright.rotation.order = 'YXZ'
     upright.rotation.y = a
-    upright.rotation.x = -0.35
+    upright.rotation.x = 0.15 + (i % 3) * 0.08
+    upright.rotation.z = side * (Math.PI / 2 - 0.35)
     upright.castShadow = false
     foliage.add(upright)
+  }
+
+  // Extra rim spillers — short leaves flopping over the lip sideways
+  for (let i = 0; i < 5; i++) {
+    const a = (i / 5) * Math.PI * 2 + 0.7
+    const side = i % 2 === 0 ? 1 : -1
+    const spill = new THREE.Mesh(
+      createPothosLeafGeometry(),
+      i % 2 === 0 ? leafMatAlt : leafMat,
+    )
+    spill.scale.setScalar(0.1)
+    spill.position.set(Math.cos(a) * rimR * 0.95, 0.01, Math.sin(a) * rimR * 0.95)
+    spill.rotation.order = 'YXZ'
+    spill.rotation.y = a
+    spill.rotation.x = 0.35
+    spill.rotation.z = side * (Math.PI / 2 - 0.1)
+    spill.castShadow = false
+    foliage.add(spill)
   }
 
   plant.add(foliage)
@@ -696,29 +1043,42 @@ export function createPlants() {
   const group = new THREE.Group()
   group.name = 'plants'
 
-  // Corner between the desk and dining table (back-right)
+  // Back-right corner (+X / −Z) — L along the walls, inset so foliage clears WALL_POS≈4.48
+  //   bird ——— monstera
+  //                |
+  //              snake
   const monstera = createMonstera({
-    potColor: 0xc4a484,
+    potColor: 0xc4683a,
     height: 1.55,
     leafCount: 6,
     potScale: 1.15,
   })
-  monstera.position.set(2.2, 0, -2.35)
-  monstera.rotation.y = -0.55
+  monstera.position.set(3.05, 0, -3.05)
+  monstera.rotation.y = Math.PI * 0.75 // open toward room (−X / +Z)
   group.add(monstera)
 
   const bird = createBirdOfParadise({
-    potColor: 0xd4b896,
+    potColor: 0xb85c38,
     leafCount: 4,
     potScale: 1.15,
   })
-  bird.position.set(1.95, 0, -3.7)
-  bird.rotation.y = -0.45
+  bird.position.set(1.9, 0, -3.05)
+  bird.rotation.y = Math.PI * 0.15 // blooms face into the room
   group.add(bird)
+
+  const snake = createSnakePlant({
+    potColor: 0xd4784a,
+    leafCount: 6,
+    potScale: 0.95,
+    height: 1.05,
+  })
+  snake.position.set(3.05, 0, -1.9)
+  snake.rotation.y = -Math.PI * 0.35
+  group.add(snake)
 
   // On the desk surface
   const deskSnake = createSnakePlant({
-    potColor: 0x8f6b52,
+    potColor: 0xc4683a,
     leafCount: 4,
     potScale: 0.45,
     height: 0.42,
@@ -727,67 +1087,46 @@ export function createPlants() {
   deskSnake.rotation.y = 0.6
   group.add(deskSnake)
 
-  // Near the turntable / vinyl
-  const fiddle = createFiddleLeafFig({
-    potColor: 0xb08968,
-    height: 1.35,
-    leafCount: 5,
-    potScale: 1.05,
-  })
-  fiddle.position.set(-3.6, 0, -2.15)
-  fiddle.rotation.y = 0.55
-  group.add(fiddle)
-
-  // By the kitchenette / entry — clear of the longer side run
-  const snake = createSnakePlant({
-    potColor: 0xcfc6b8,
-    leafCount: 6,
-    potScale: 0.95,
-    height: 1.05,
-  })
-  snake.position.set(3.0, 0, 1.35)
-  snake.rotation.y = -0.4
-  group.add(snake)
-
-  // TV nook — near the chaise tip against the wall
-  const miniMonstera = createMonstera({
-    potColor: 0xa67c52,
+  // Near the turntable / vinyl — clear of the −X wall
+  const stereoMonstera = createMonstera({
+    potColor: 0xb85c38,
     height: 0.85,
     leafCount: 4,
     potScale: 0.75,
   })
-  miniMonstera.position.set(-3.85, 0, 2.95)
-  miniMonstera.rotation.y = 1.1
-  group.add(miniMonstera)
+  stereoMonstera.position.set(-3.15, 0, -2.15)
+  stereoMonstera.rotation.y = 0.85 // lean into the room (+X)
+  group.add(stereoMonstera)
 
-  // Hanging planters — suspended near the window and lounge corners
+  // Hanging planters — pulled off the walls so trailing leaves don’t clip
   const hangA = createHangingPlanter({
-    potColor: 0xb08968,
+    potColor: 0xc4683a,
     trailLength: 0.55,
     cordLength: 0.5,
   })
-  hangA.position.set(-2.15, 2.85, -4.15)
+  hangA.position.set(-2.15, 3.55, -3.55)
   group.add(hangA)
 
   const hangB = createHangingPlanter({
-    potColor: 0xc4a484,
+    potColor: 0xd4784a,
     leafColor: 0x3d7a48,
     leafColorAlt: 0x2a6338,
     trailLength: 0.4,
     cordLength: 0.4,
   })
-  hangB.position.set(2.0, 2.9, -4.15)
+  hangB.position.set(2.0, 3.6, -3.55)
   hangB.rotation.y = 0.6
   group.add(hangB)
 
   const hangC = createHangingPlanter({
-    potColor: 0x8f6b52,
+    potColor: 0xb85c38,
     leafColor: 0x4a6b3c,
     leafColorAlt: 0x3a5a32,
     trailLength: 0.55,
     cordLength: 0.55,
   })
-  hangC.position.set(-3.9, 2.75, 0.35)
+  // Front-left corner (−X / +Z) — inset from both walls
+  hangC.position.set(-3.55, 3.5, 3.55)
   hangC.rotation.y = 1.1
   group.add(hangC)
 

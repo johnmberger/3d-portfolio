@@ -112,20 +112,7 @@ export function createCameraRig(camera, controls) {
     unlockOrbitLimits()
     rememberExplore()
     setFocusFromScreen(screenMesh)
-
-    // Dolly along the screen normal while always looking at the screen center
-    _normal.set(0, 0, 1).transformDirection(screenMesh.matrixWorld).normalize()
-    const startOffset = new THREE.Vector3().subVectors(camera.position, focus.target)
-    let startDist = startOffset.dot(_normal)
-    if (startDist < focusDistance() * 1.05) {
-      startDist = Math.max(camera.position.distanceTo(focus.target), focusDistance() * 2.2)
-    }
-    fromPos.copy(focus.target).addScaledVector(_normal, startDist)
-    fromTarget.copy(focus.target)
-    // Snap onto the approach axis (same look-at — reads as a straight push-in)
-    camera.position.copy(fromPos)
-    controls.target.copy(fromTarget)
-
+    // Ease from the current explore pose — no snap onto the approach axis
     beginTransition('toFocus', focus)
   }
 

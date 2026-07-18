@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { ROOM_HALF, ROOM_SIZE, WALL_POS } from './roomConstants.js'
+import { ROOM_HALF, ROOM_SIZE, WALL_POS, WALL_H } from './roomConstants.js'
 
 function createWindow(wallMat, trimMat) {
   const windowGroup = new THREE.Group()
@@ -9,7 +9,7 @@ function createWindow(wallMat, trimMat) {
   const winH = 3.2
   const winY = 2.35
   const wallZ = -ROOM_HALF
-  const wallH = 5
+  const wallH = WALL_H
   const wallW = ROOM_SIZE
   const frameDepth = 0.1
   const thickness = 0.1
@@ -218,14 +218,151 @@ function createSunsetTexture() {
   return tex
 }
 
+/** Hardwood plank albedo + roughness for the living-room floor. */
+function createWoodFloorMaps() {
+  const w = 1024
+  const h = 512
+  const plankCount = 6
+  const plankW = w / plankCount
+
+  const color = document.createElement('canvas')
+  color.width = w
+  color.height = h
+  const ctx = color.getContext('2d')
+
+  const rough = document.createElement('canvas')
+  rough.width = w
+  rough.height = h
+  const rctx = rough.getContext('2d')
+  rctx.fillStyle = '#c8c8c8'
+  rctx.fillRect(0, 0, w, h)
+
+  // Warm oak / walnut mix tones
+  const tones = [
+    [176, 132, 88],
+    [158, 118, 78],
+    [168, 124, 82],
+    [148, 108, 70],
+    [184, 140, 96],
+    [162, 120, 80],
+  ]
+
+  for (let p = 0; p < plankCount; p++) {
+    const x0 = Math.floor(p * plankW)
+    const x1 = Math.floor((p + 1) * plankW)
+    const [br, bg, bb] = tones[p % tones.length]
+    const shade = 0.92 + ((p * 17) % 7) * 0.018
+    ctx.fillStyle = `rgb(${br * shade | 0},${bg * shade | 0},${bb * shade | 0})`
+    ctx.fillRect(x0, 0, x1 - x0, h)
+
+    // Longitudinal grain
+    for (let i = 0; i < 90; i++) {
+      const gx = x0 + 3 + Math.random() * (plankW - 6)
+      const amp = 0.5 + Math.random() * 1.5
+      const dark = Math.random() > 0.55
+      ctx.strokeStyle = dark
+        ? `rgba(70,42,22,${0.04 + Math.random() * 0.08})`
+        : `rgba(255,230,190,${0.03 + Math.random() * 0.06})`
+      ctx.lineWidth = 0.6 + Math.random() * 1.4
+      ctx.beginPath()
+      ctx.moveTo(gx, 0)
+      let x = gx
+      for (let y = 0; y <= h; y += 8) {
+        x += (Math.random() - 0.5) * amp
+        ctx.lineTo(x, y)
+      }
+      ctx.stroke()
+
+      rctx.strokeStyle = dark ? '#9a9a9a' : '#d8d8d8'
+      rctx.lineWidth = 1
+      rctx.beginPath()
+      rctx.moveTo(gx, 0)
+      x = gx
+      for (let y = 0; y <= h; y += 8) {
+        x += (Math.random() - 0.5) * amp
+        rctx.lineTo(x, y)
+      }
+      rctx.stroke()
+    }
+
+    // Occasional knot
+    if (p % 2 === 0) {
+      const kx = x0 + plankW * (0.25 + Math.random() * 0.5)
+      const ky = h * (0.15 + Math.random() * 0.7)
+      const kr = 4 + Math.random() * 7
+      const knot = ctx.createRadialGradient(kx, ky, 0, kx, ky, kr)
+      knot.addColorStop(0, 'rgba(90,55,30,0.55)')
+      knot.addColorStop(0.55, 'rgba(120,75,40,0.25)')
+      knot.addColorStop(1, 'rgba(120,75,40,0)')
+      ctx.fillStyle = knot
+      ctx.beginPath()
+      ctx.ellipse(kx, ky, kr * 0.7, kr, Math.random() * 0.5, 0, Math.PI * 2)
+      ctx.fill()
+    }
+
+    // Plank edge bevel / seam
+    const seam = ctx.createLinearGradient(x0, 0, x0 + 5, 0)
+    seam.addColorStop(0, 'rgba(55,35,18,0.45)')
+    seam.addColorStop(1, 'rgba(55,35,18,0)')
+    ctx.fillStyle = seam
+    ctx.fillRect(x0, 0, 5, h)
+
+    const seamR = ctx.createLinearGradient(x1 - 4, 0, x1, 0)
+    seamR.addColorStop(0, 'rgba(55,35,18,0)')
+    seamR.addColorStop(1, 'rgba(40,25,12,0.35)')
+    ctx.fillStyle = seamR
+    ctx.fillRect(x1 - 4, 0, 4, h)
+
+    rctx.fillStyle = '#888888'
+    rctx.fillRect(x0, 0, 2, h)
+    rctx.fillRect(x1 - 2, 0, 2, h)
+  }
+
+  // Soft end-grain breaks so long runs don't look infinite
+  for (let i = 0; i < 14; i++) {
+    const y = ((i + 0.35) / 14) * h + (Math.random() - 0.5) * 12
+    const p = i % plankCount
+    const x0 = Math.floor(p * plankW) + 4
+    const x1 = Math.floor((p + 1) * plankW) - 4
+    ctx.strokeStyle = 'rgba(60,38,20,0.22)'
+    ctx.lineWidth = 1.2
+    ctx.beginPath()
+    ctx.moveTo(x0, y)
+    ctx.lineTo(x1, y)
+    ctx.stroke()
+  }
+
+  const map = new THREE.CanvasTexture(color)
+  map.colorSpace = THREE.SRGBColorSpace
+  map.wrapS = map.wrapT = THREE.RepeatWrapping
+  map.anisotropy = 8
+  map.needsUpdate = true
+
+  const roughnessMap = new THREE.CanvasTexture(rough)
+  roughnessMap.wrapS = roughnessMap.wrapT = THREE.RepeatWrapping
+  roughnessMap.anisotropy = 4
+  roughnessMap.needsUpdate = true
+
+  return { map, roughnessMap }
+}
+
 export function createRoom() {
   const group = new THREE.Group()
   group.name = 'room'
 
+  const woodMaps = createWoodFloorMaps()
+  // Planks run along Z; ~0.18 m wide boards across the room
+  const plankRepeatX = ROOM_SIZE / 0.18
+  const plankRepeatZ = ROOM_SIZE / 2.4
+  woodMaps.map.repeat.set(plankRepeatX / 6, plankRepeatZ)
+  woodMaps.roughnessMap.repeat.set(plankRepeatX / 6, plankRepeatZ)
+
   const floorMat = new THREE.MeshStandardMaterial({
-    color: 0xb8956c,
-    roughness: 0.85,
-    metalness: 0.05,
+    map: woodMaps.map,
+    roughnessMap: woodMaps.roughnessMap,
+    roughness: 0.72,
+    metalness: 0.02,
+    color: 0xffffff,
   })
   const wallMat = new THREE.MeshStandardMaterial({
     color: 0xe6ebe4,
@@ -245,6 +382,22 @@ export function createRoom() {
   floor.receiveShadow = true
   group.add(floor)
 
+  const ceilingMat = new THREE.MeshStandardMaterial({
+    color: 0xf2f0ea,
+    roughness: 0.92,
+    metalness: 0,
+  })
+  const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(ROOM_SIZE, ROOM_SIZE), ceilingMat)
+  ceiling.name = 'ceiling'
+  ceiling.rotation.x = Math.PI / 2
+  ceiling.position.y = WALL_H
+  ceiling.receiveShadow = true
+  group.add(ceiling)
+
+  // HVAC returns — flush to the ceiling underside
+  group.add(createCeilingVent(-2.4, 1.6))
+  group.add(createCeilingVent(2.2, -1.8, Math.PI / 2))
+
   group.add(createWindow(wallMat, trimMat))
 
   // Left wall with bathroom doorway (aligned with bathroom.js)
@@ -256,14 +409,129 @@ export function createRoom() {
   // Front wall (+Z) with closed entrance door — opposite the window
   group.add(createFrontWall(wallMat, trimMat))
 
-  const baseL = new THREE.Mesh(new THREE.BoxGeometry(2.7, 0.12, 0.08), trimMat)
-  baseL.position.set(-3.25, 0.06, -(WALL_POS - 0.02))
-  group.add(baseL)
-  const baseR = new THREE.Mesh(new THREE.BoxGeometry(2.7, 0.12, 0.08), trimMat)
-  baseR.position.set(3.25, 0.06, -(WALL_POS - 0.02))
-  group.add(baseR)
+  group.add(createRoomBaseboards(trimMat))
 
   group.add(createModernDesk())
+
+  return group
+}
+
+/** Rectangular ceiling grille with louvers, hung just under WALL_H. */
+function createCeilingVent(x, z, yaw = 0) {
+  const vent = new THREE.Group()
+  vent.name = 'ceilingVent'
+  vent.position.set(x, WALL_H - 0.012, z)
+  vent.rotation.y = yaw
+
+  const metal = new THREE.MeshStandardMaterial({
+    color: 0xd8d4cc,
+    roughness: 0.45,
+    metalness: 0.55,
+  })
+  const dark = new THREE.MeshStandardMaterial({
+    color: 0x3a3c3e,
+    roughness: 0.7,
+    metalness: 0.2,
+  })
+
+  const w = 0.55
+  const d = 0.28
+  const frameT = 0.018
+
+  const back = new THREE.Mesh(new THREE.BoxGeometry(w, 0.008, d), dark)
+  vent.add(back)
+
+  // Outer frame
+  const framePieces = [
+    [w, frameT, 0, d / 2 - frameT / 2],
+    [w, frameT, 0, -(d / 2 - frameT / 2)],
+    [frameT, d - frameT * 2, w / 2 - frameT / 2, 0],
+    [frameT, d - frameT * 2, -(w / 2 - frameT / 2), 0],
+  ]
+  for (const [fw, fd, fx, fz] of framePieces) {
+    const f = new THREE.Mesh(new THREE.BoxGeometry(fw, 0.01, fd), metal)
+    f.position.set(fx, -0.006, fz)
+    vent.add(f)
+  }
+
+  // Louvers across the opening
+  const innerW = w - frameT * 2 - 0.01
+  const slatCount = 7
+  for (let i = 0; i < slatCount; i++) {
+    const t = (i + 0.5) / slatCount
+    const sz = -d / 2 + frameT + 0.02 + t * (d - frameT * 2 - 0.04)
+    const slat = new THREE.Mesh(new THREE.BoxGeometry(innerW, 0.006, 0.016), metal)
+    slat.position.set(0, -0.01, sz)
+    slat.rotation.x = 0.45
+    vent.add(slat)
+  }
+
+  return vent
+}
+
+/**
+ * Continuous wood baseboard around the living room — under windows too,
+ * with gaps only at the entry and bathroom doorways.
+ */
+function createRoomBaseboards(trimMat) {
+  const group = new THREE.Group()
+  group.name = 'baseboards'
+
+  const h = 0.12
+  const t = 0.08
+  const y = h / 2
+  const inset = 0.02
+
+  // Keep in sync with createFrontWall / createLeftWall door openings
+  const entryDoorX = 0.4
+  const entryDoorW = 0.92
+  const entryL = entryDoorX - entryDoorW / 2
+  const entryR = entryDoorX + entryDoorW / 2
+
+  const bathZ = -0.85
+  const bathDoorW = 0.88
+  const bathDoorZ = bathZ - 0.12
+  const bathL = bathDoorZ - bathDoorW / 2
+  const bathR = bathDoorZ + bathDoorW / 2
+
+  const zWall = WALL_POS - inset
+  const xWall = WALL_POS - inset
+
+  function boardX(len, x, z) {
+    if (len < 0.02) return
+    const b = new THREE.Mesh(new THREE.BoxGeometry(len, h, t), trimMat)
+    b.position.set(x, y, z)
+    b.castShadow = true
+    b.receiveShadow = true
+    group.add(b)
+  }
+
+  function boardZ(len, x, z) {
+    if (len < 0.02) return
+    const b = new THREE.Mesh(new THREE.BoxGeometry(t, h, len), trimMat)
+    b.position.set(x, y, z)
+    b.castShadow = true
+    b.receiveShadow = true
+    group.add(b)
+  }
+
+  // Back wall (−Z) — full run including under the main window
+  boardX(ROOM_SIZE, 0, -zWall)
+
+  // Front wall (+Z) — gap for entry door
+  const frontLeftLen = entryL - (-ROOM_HALF)
+  boardX(frontLeftLen, -ROOM_HALF + frontLeftLen / 2, zWall)
+  const frontRightLen = ROOM_HALF - entryR
+  boardX(frontRightLen, entryR + frontRightLen / 2, zWall)
+
+  // Left wall (−X) — gap for bathroom door
+  const leftSouthLen = bathL - (-ROOM_HALF)
+  boardZ(leftSouthLen, -xWall, -ROOM_HALF + leftSouthLen / 2)
+  const leftNorthLen = ROOM_HALF - bathR
+  boardZ(leftNorthLen, -xWall, bathR + leftNorthLen / 2)
+
+  // Right wall (+X) — full run including under the side window
+  boardZ(ROOM_SIZE, xWall, 0)
 
   return group
 }
@@ -277,7 +545,7 @@ function createSideWindow(wallMat, trimMat) {
   group.name = 'sideWindow'
 
   const wallX = WALL_POS
-  const wallH = 5
+  const wallH = WALL_H
   const zMin = -ROOM_HALF
   const zMax = ROOM_HALF
 
@@ -425,15 +693,6 @@ function createSideWindow(wallMat, trimMat) {
   glow.position.set(wallX - 0.5, winY, winZ)
   group.add(glow)
 
-  const board = (len, z) => {
-    const b = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.12, len), trimMat)
-    b.position.set(wallX - 0.02, 0.06, z)
-    group.add(b)
-  }
-  if (southLen > 0.02) board(southLen, zMin + southLen / 2)
-  if (northLen > 0.02) board(northLen, openN + northLen / 2)
-  // No baseboard across the opening (sill covers the mid)
-
   group.userData.parallax = {
     layers: parallaxLayers,
     origin: new THREE.Vector3(wallX, winY, winZ),
@@ -452,14 +711,14 @@ function createFrontWall(wallMat, trimMat) {
   wall.name = 'frontWall'
 
   const wallZ = WALL_POS
-  const wallH = 5
+  const wallH = WALL_H
   const xMin = -ROOM_HALF
   const xMax = ROOM_HALF
 
   const doorW = 0.92
   const doorH = 2.15
-  // Toward the right so the table / couch stay clear of the entry
-  const doorCenterX = 2.1
+  // Centered between TV (~−2.9) and kitchenette front run (~3+)
+  const doorCenterX = 0.4
   const openL = doorCenterX - doorW / 2
   const openR = doorCenterX + doorW / 2
 
@@ -545,15 +804,6 @@ function createFrontWall(wallMat, trimMat) {
   knobPlate.position.set(openR - 0.14, 1.0, wallZ - 0.055)
   wall.add(knobPlate)
 
-  // Baseboard segments (not across the doorway)
-  const board = (len, x) => {
-    const b = new THREE.Mesh(new THREE.BoxGeometry(len, 0.12, 0.08), trimMat)
-    b.position.set(x, 0.06, wallZ - 0.02)
-    wall.add(b)
-  }
-  if (leftW > 0.02) board(leftW, xMin + leftW / 2)
-  if (rightW > 0.02) board(rightW, openR + rightW / 2)
-
   return wall
 }
 
@@ -567,7 +817,7 @@ function createLeftWall(wallMat, trimMat) {
   wall.name = 'leftWall'
 
   const wallX = -WALL_POS
-  const wallH = 5
+  const wallH = WALL_H
   const zMin = -ROOM_HALF
   const zMax = ROOM_HALF
 
@@ -616,16 +866,6 @@ function createLeftWall(wallMat, trimMat) {
     wallPlane(doorW, headerH, doorH + headerH / 2, doorCenterZ)
   }
 
-  const board = (len, z) => {
-    const b = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.12, len), trimMat)
-    b.position.set(wallX + 0.02, 0.06, z)
-    wall.add(b)
-  }
-  if (southLen > 0.02) board(southLen, zMin + southLen / 2)
-  if (northLen > 0.02) board(northLen, bathNorth + northLen / 2)
-  if (leftOfDoor > 0.02) board(leftOfDoor, bathSouth + leftOfDoor / 2)
-  if (rightOfDoor > 0.02) board(rightOfDoor, openR + rightOfDoor / 2)
-
   return wall
 }
 
@@ -635,14 +875,14 @@ function createModernDesk() {
   desk.name = 'desk'
 
   const topMat = new THREE.MeshStandardMaterial({
-    color: 0x2e2924,
-    roughness: 0.48,
-    metalness: 0.12,
+    color: 0xf4f2ee,
+    roughness: 0.12,
+    metalness: 0.55,
   })
   const edgeMat = new THREE.MeshStandardMaterial({
-    color: 0x1f1b17,
-    roughness: 0.55,
-    metalness: 0.1,
+    color: 0xe4e2de,
+    roughness: 0.18,
+    metalness: 0.5,
   })
   const steelMat = new THREE.MeshStandardMaterial({
     color: 0x1c1e1d,

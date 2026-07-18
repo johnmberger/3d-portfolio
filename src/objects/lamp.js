@@ -1,8 +1,12 @@
 import * as THREE from 'three'
 
-export function createFloorLamp() {
+export function createFloorLamp({
+  position = [-0.48, 0, 1.2],
+  rotationY = -Math.PI / 2,
+  name = 'floorLamp',
+} = {}) {
   const group = new THREE.Group()
-  group.name = 'floorLamp'
+  group.name = name
 
   const metal = new THREE.MeshStandardMaterial({
     color: 0x3a3834,
@@ -20,38 +24,64 @@ export function createFloorLamp() {
     metalness: 0,
     emissive: 0xf0d090,
     emissiveIntensity: 0.35,
+    side: THREE.DoubleSide,
   })
 
+  const baseH = 0.04
+  const poleH = 1.52
+  const poleTop = baseH + poleH
+
   const base = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.16, 0.2, 0.04, 24),
+    new THREE.CylinderGeometry(0.16, 0.2, baseH, 24),
     metal,
   )
-  base.position.y = 0.02
+  base.position.y = baseH / 2
   base.castShadow = true
   group.add(base)
 
-  const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.022, 1.55, 12), metal)
-  pole.position.y = 0.8
+  const pole = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.018, 0.022, poleH, 12),
+    metal,
+  )
+  pole.position.y = baseH + poleH / 2
   pole.castShadow = true
   group.add(pole)
 
-  const joint = new THREE.Mesh(new THREE.SphereGeometry(0.035, 12, 12), brass)
-  joint.position.y = 1.58
-  group.add(joint)
+  // Head assembly — joint, arm, and shade share one origin so they stay connected
+  const head = new THREE.Group()
+  head.position.y = poleTop
+  // Slight upward lift so the arm doesn’t read droopy
+  head.rotation.z = 0.22
+  group.add(head)
 
-  const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 0.28, 10), metal)
-  arm.position.set(0.1, 1.62, 0)
-  arm.rotation.z = Math.PI / 2.4
-  group.add(arm)
+  const joint = new THREE.Mesh(new THREE.SphereGeometry(0.032, 12, 12), brass)
+  joint.position.set(0, 0, 0)
+  head.add(joint)
 
+  const armLen = 0.34
+  const arm = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.011, 0.011, armLen, 10),
+    metal,
+  )
+  arm.rotation.z = Math.PI / 2
+  arm.position.x = armLen / 2
+  arm.castShadow = true
+  head.add(arm)
+
+  const armTip = new THREE.Mesh(new THREE.SphereGeometry(0.018, 10, 10), brass)
+  armTip.position.x = armLen
+  head.add(armTip)
+
+  const shadeH = 0.28
   const shade = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.08, 0.22, 0.28, 24, 1, true),
+    new THREE.CylinderGeometry(0.08, 0.22, shadeH, 24, 1, true),
     shadeMat,
   )
   shade.name = 'lampShade'
-  shade.position.set(0.22, 1.48, 0)
+  // Hang from the arm tip
+  shade.position.set(armLen, -shadeH / 2 + 0.02, 0)
   shade.castShadow = true
-  group.add(shade)
+  head.add(shade)
 
   const shadeTop = new THREE.Mesh(
     new THREE.CircleGeometry(0.08, 24),
@@ -62,8 +92,16 @@ export function createFloorLamp() {
     }),
   )
   shadeTop.rotation.x = Math.PI / 2
-  shadeTop.position.set(0.22, 1.62, 0)
-  group.add(shadeTop)
+  shadeTop.position.set(armLen, 0.02, 0)
+  head.add(shadeTop)
+
+  // Short stem from arm tip into the shade
+  const stem = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.008, 0.008, 0.06, 8),
+    brass,
+  )
+  stem.position.set(armLen, -0.02, 0)
+  head.add(stem)
 
   const bulb = new THREE.Mesh(
     new THREE.SphereGeometry(0.04, 12, 12),
@@ -74,25 +112,23 @@ export function createFloorLamp() {
       roughness: 0.4,
     }),
   )
-  bulb.position.set(0.22, 1.48, 0)
+  bulb.position.set(armLen, -shadeH * 0.35, 0)
   bulb.name = 'lampBulb'
-  group.add(bulb)
+  head.add(bulb)
 
   const light = new THREE.PointLight(0xffd9a0, 1.1, 6, 2)
-  light.position.set(0.22, 1.35, 0)
-  // Point-light shadows are cube maps — too expensive for this fill light
+  light.position.set(armLen, -shadeH * 0.45, 0)
   light.castShadow = false
   light.name = 'lampLight'
-  group.add(light)
+  head.add(light)
 
-  // Beside the TV nook / couch
-  group.position.set(-3.95, 0, 1.55)
-  group.rotation.y = 0.4
+  group.position.set(...position)
+  group.rotation.y = rotationY
 
   return group
 }
 
-export function updateFloorLamp(lamp, { night = false } = {}) {
+export function updateFloorLamp(lamp) {
   const light = lamp.userData.lampLight ?? lamp.getObjectByName('lampLight')
   const bulb = lamp.userData.lampBulb ?? lamp.getObjectByName('lampBulb')
   const shade = lamp.userData.lampShade ?? lamp.getObjectByName('lampShade')
@@ -100,7 +136,7 @@ export function updateFloorLamp(lamp, { night = false } = {}) {
   lamp.userData.lampBulb = bulb
   lamp.userData.lampShade = shade
 
-  if (light) light.intensity = night ? 1.85 : 0.55
-  if (bulb?.material) bulb.material.emissiveIntensity = night ? 1.8 : 0.6
-  if (shade?.material) shade.material.emissiveIntensity = night ? 0.7 : 0.2
+  if (light) light.intensity = 0.55
+  if (bulb?.material) bulb.material.emissiveIntensity = 0.6
+  if (shade?.material) shade.material.emissiveIntensity = 0.2
 }

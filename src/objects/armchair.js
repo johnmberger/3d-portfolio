@@ -9,6 +9,37 @@ function mat(color, props = {}) {
   })
 }
 
+/** Rounded rectangular cushion — shape in XY, thickness along Z. */
+function createRoundedCushionGeo(w, h, depth) {
+  const hw = w * 0.5
+  const hh = h * 0.5
+  const r = Math.min(w, h) * 0.28
+  const shape = new THREE.Shape()
+  shape.moveTo(-hw + r, -hh)
+  shape.lineTo(hw - r, -hh)
+  shape.quadraticCurveTo(hw, -hh, hw, -hh + r)
+  shape.lineTo(hw, hh - r)
+  shape.quadraticCurveTo(hw, hh, hw - r, hh)
+  shape.lineTo(-hw + r, hh)
+  shape.quadraticCurveTo(-hw, hh, -hw, hh - r)
+  shape.lineTo(-hw, -hh + r)
+  shape.quadraticCurveTo(-hw, -hh, -hw + r, -hh)
+
+  const geo = new THREE.ExtrudeGeometry(shape, {
+    depth: depth * 0.5,
+    bevelEnabled: true,
+    bevelThickness: depth * 0.25,
+    bevelSize: Math.min(w, h) * 0.1,
+    bevelSegments: 4,
+    curveSegments: 10,
+  })
+  geo.computeBoundingBox()
+  const c = new THREE.Vector3()
+  geo.boundingBox.getCenter(c)
+  geo.translate(-c.x, -c.y, -c.z)
+  return geo
+}
+
 /**
  * Compact lounge chair — same fabric language as the couch/sectional.
  * Pass position/rotation to place variants (TV nook, listening chair, etc.).
@@ -18,7 +49,7 @@ export function createArmchair({
   rotationY = 2.45 + Math.PI / 2,
   fabricColor = 0xb8a48c,
   fabricDeepColor = 0xa69078,
-  pillowColor = 0x6a7a68,
+  pillowColor = 0x8a8e92,
 } = {}) {
   const group = new THREE.Group()
   group.name = 'armchair'
@@ -39,10 +70,11 @@ export function createArmchair({
   group.add(seat)
 
   const pad = new THREE.Mesh(
-    new THREE.BoxGeometry(seatW * 0.88, 0.06, seatD * 0.85),
+    createRoundedCushionGeo(seatW * 0.88, seatD * 0.85, 0.08),
     fabricDeep,
   )
-  pad.position.set(0, seatY + seatH / 2 + 0.03, 0.02)
+  pad.rotation.x = -Math.PI / 2
+  pad.position.set(0, seatY + seatH / 2 + 0.04, 0.02)
   pad.castShadow = true
   group.add(pad)
 
@@ -55,10 +87,10 @@ export function createArmchair({
   group.add(back)
 
   const cushion = new THREE.Mesh(
-    new THREE.BoxGeometry(seatW * 0.82, 0.4, 0.1),
+    createRoundedCushionGeo(seatW * 0.82, 0.4, 0.12),
     fabricDeep,
   )
-  cushion.position.set(0, seatY + 0.34, -seatD / 2 + 0.12)
+  cushion.position.set(0, seatY + 0.34, -seatD / 2 + 0.13)
   cushion.castShadow = true
   group.add(cushion)
 
@@ -93,12 +125,19 @@ export function createArmchair({
     group.add(leg)
   }
 
+  const pillowH = 0.22
+  const pillowD = 0.11
+  const padTopY = seatY + seatH / 2 + 0.04 + 0.05
+  const backCushFrontZ = -seatD / 2 + 0.13 + 0.06
   const pillow = new THREE.Mesh(
-    new THREE.BoxGeometry(0.28, 0.22, 0.1),
+    createRoundedCushionGeo(0.28, pillowH, pillowD),
     mat(pillowColor, { roughness: 0.9 }),
   )
-  pillow.position.set(0.12, seatY + 0.28, -0.12)
-  pillow.rotation.z = 0.15
+  pillow.position.set(
+    0.12,
+    padTopY + pillowH / 2,
+    backCushFrontZ + pillowD / 2 + 0.01,
+  )
   pillow.castShadow = true
   group.add(pillow)
 

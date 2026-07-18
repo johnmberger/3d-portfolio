@@ -19,6 +19,46 @@ function addLeg(group, wood, x, z, h = 0.22) {
   group.add(leg)
 }
 
+/** Soft rectangular throw-pillow geometry (no addon import). */
+function createPillowGeometry(w, h, d) {
+  const hw = w * 0.5
+  const hh = h * 0.5
+  const r = Math.min(w, h) * 0.22
+  const shape = new THREE.Shape()
+  shape.moveTo(-hw + r, -hh)
+  shape.lineTo(hw - r, -hh)
+  shape.quadraticCurveTo(hw, -hh, hw, -hh + r)
+  shape.lineTo(hw, hh - r)
+  shape.quadraticCurveTo(hw, hh, hw - r, hh)
+  shape.lineTo(-hw + r, hh)
+  shape.quadraticCurveTo(-hw, hh, -hw, hh - r)
+  shape.lineTo(-hw, -hh + r)
+  shape.quadraticCurveTo(-hw, -hh, -hw + r, -hh)
+
+  const geo = new THREE.ExtrudeGeometry(shape, {
+    depth: d * 0.55,
+    bevelEnabled: true,
+    bevelThickness: d * 0.22,
+    bevelSize: Math.min(w, h) * 0.08,
+    bevelSegments: 3,
+    curveSegments: 8,
+  })
+  geo.computeBoundingBox()
+  const c = new THREE.Vector3()
+  geo.boundingBox.getCenter(c)
+  geo.translate(-c.x, -c.y, -c.z)
+  return geo
+}
+
+function addPillow(group, material, { w, h, d, x, y, z, rot = [0, 0, 0] }) {
+  const pillow = new THREE.Mesh(createPillowGeometry(w, h, d), material)
+  pillow.position.set(x, y, z)
+  pillow.rotation.set(rot[0], rot[1], rot[2])
+  pillow.castShadow = true
+  group.add(pillow)
+  return pillow
+}
+
 /**
  * L-shaped sectional for the TV nook — continuous seat + L-shaped back.
  * Main run faces the TV; chaise sits on the −X wall side.
@@ -27,11 +67,10 @@ export function createCouch() {
   const group = new THREE.Group()
   group.name = 'sectional'
 
-  const fabric = mat(0xc4b09a)
-  const fabricDeep = mat(0xb09a82)
-  const accent = mat(0x8a9a88, { roughness: 0.9 })
+  const fabric = mat(0x2f4a3c)
+  const fabricDeep = mat(0x263d32)
   const wood = mat(0x5c4330, { roughness: 0.55, metalness: 0.08 })
-  const plinth = mat(0x3d342c, { roughness: 0.7 })
+  const plinth = mat(0x2a322c, { roughness: 0.7 })
 
   const seatW = 2.55
   const seatD = 0.9
@@ -65,16 +104,23 @@ export function createCouch() {
   chaiseSeat.receiveShadow = true
   group.add(chaiseSeat)
 
-  // Seat pads — main run (right of chaise) + chaise/corner pad
+  // Seat pads — main run (2) + wall/chaise run (2), same gaps
   const padY = seatY + seatH / 2 + 0.03
   const padH = 0.07
-  const mainPadW = (seatW - chaiseW) * 0.42
-  for (const x of [
-    seatW * 0.5 - mainPadW * 0.55 - 0.08,
-    seatW * 0.5 - mainPadW * 1.55 - 0.14,
-  ]) {
+  const mainPadGap = 0.04
+  const mainRunW = seatW - chaiseW
+  const mainPadCount = 2
+  const mainPadW = (mainRunW - mainPadGap * (mainPadCount + 1)) / mainPadCount
+  const mainPadD = seatD * 0.86
+  const mainRunStart = outerX + chaiseW
+  for (let i = 0; i < mainPadCount; i++) {
+    const x =
+      mainRunStart +
+      mainPadGap +
+      mainPadW / 2 +
+      i * (mainPadW + mainPadGap)
     const pad = new THREE.Mesh(
-      new THREE.BoxGeometry(mainPadW, padH, seatD * 0.88),
+      new THREE.BoxGeometry(mainPadW, padH, mainPadD),
       fabricDeep,
     )
     pad.position.set(x, padY, 0.02)
@@ -82,13 +128,28 @@ export function createCouch() {
     group.add(pad)
   }
 
-  const chaisePad = new THREE.Mesh(
-    new THREE.BoxGeometry(chaiseW * 0.9, padH, seatD * 0.5 + chaiseL * 0.92),
-    fabricDeep,
-  )
-  chaisePad.position.set(chaiseX, padY, seatD * 0.15 + chaiseL * 0.35)
-  chaisePad.castShadow = true
-  group.add(chaisePad)
+  // Wall / chaise pads — full length to the chaise tip, with a center break
+  const chaisePadCount = 2
+  const chaisePadW = chaiseW * 0.88
+  const chaisePadStart = -seatD / 2 + 0.06
+  const chaisePadEnd = chaiseZ + chaiseL / 2 - 0.1
+  const chaisePadSpan = chaisePadEnd - chaisePadStart
+  const chaisePadLen =
+    (chaisePadSpan - mainPadGap * (chaisePadCount + 1)) / chaisePadCount
+  for (let i = 0; i < chaisePadCount; i++) {
+    const z =
+      chaisePadStart +
+      mainPadGap +
+      chaisePadLen / 2 +
+      i * (chaisePadLen + mainPadGap)
+    const pad = new THREE.Mesh(
+      new THREE.BoxGeometry(chaisePadW, padH, chaisePadLen),
+      fabricDeep,
+    )
+    pad.position.set(chaiseX, padY, z)
+    pad.castShadow = true
+    group.add(pad)
+  }
 
   // —— Continuous L backrest ——
   // Rear run (full main width)
@@ -123,27 +184,37 @@ export function createCouch() {
   corner.castShadow = true
   group.add(corner)
 
-  // Back cushions — rear
-  const cushW = seatW * 0.28
-  for (const x of [-seatW * 0.28, 0, seatW * 0.33]) {
+  // Back cushions — uniform size, evenly spaced along the rear
+  const rearCushCount = 3
+  const cushGap = 0.05
+  const cushW = (seatW - cushGap * (rearCushCount + 1)) / rearCushCount
+  const cushH = 0.36
+  const cushD = 0.12
+  const cushY = seatY + 0.3
+  for (let i = 0; i < rearCushCount; i++) {
+    const x = -seatW / 2 + cushGap + cushW / 2 + i * (cushW + cushGap)
     const cushion = new THREE.Mesh(
-      new THREE.BoxGeometry(cushW * 0.92, 0.38, 0.11),
+      new THREE.BoxGeometry(cushW, cushH, cushD),
       fabricDeep,
     )
-    cushion.position.set(x, seatY + 0.32, -seatD / 2 + 0.14)
+    cushion.position.set(x, cushY, -seatD / 2 + 0.14)
     cushion.castShadow = true
     group.add(cushion)
   }
 
-  // Back cushions — wall side
-  const sideCushLen = sideBackLen * 0.28
-  for (const t of [0.22, 0.52, 0.82]) {
-    const z = -seatD / 2 + backT + t * (sideBackLen - backT)
+  // Back cushions — wall side, same height/thickness as rear
+  const sideCushCount = 3
+  const sideSpan = sideBackLen - backT * 0.4
+  const sideCushLen = (sideSpan - cushGap * (sideCushCount + 1)) / sideCushCount
+  const sideCushStart = -seatD / 2 + backT * 0.6
+  for (let i = 0; i < sideCushCount; i++) {
+    const z =
+      sideCushStart + cushGap + sideCushLen / 2 + i * (sideCushLen + cushGap)
     const cushion = new THREE.Mesh(
-      new THREE.BoxGeometry(0.11, 0.38, sideCushLen * 0.9),
+      new THREE.BoxGeometry(cushD, cushH, sideCushLen),
       fabricDeep,
     )
-    cushion.position.set(outerX + 0.02, seatY + 0.32, z)
+    cushion.position.set(outerX + 0.02, cushY, z)
     cushion.castShadow = true
     group.add(cushion)
   }
@@ -190,23 +261,50 @@ export function createCouch() {
   addLeg(group, wood, chaiseX + chaiseW * 0.3, chaiseZ + chaiseL * 0.35)
   addLeg(group, wood, chaiseX - chaiseW * 0.3, chaiseZ - chaiseL * 0.15)
 
-  const pillow1 = new THREE.Mesh(
-    new THREE.BoxGeometry(0.32, 0.26, 0.12),
-    accent,
-  )
-  pillow1.position.set(0.45, seatY + 0.3, -seatD * 0.2)
-  pillow1.rotation.set(0.1, -0.25, -0.12)
-  pillow1.castShadow = true
-  group.add(pillow1)
+  // Throw pillows — white / grey / dark grey, lightly askew, clear of cushions
+  const pillowSeatY = padY + padH / 2
+  const rearCushFrontZ = -seatD / 2 + 0.14 + cushD / 2
+  const sideCushInnerX = outerX + 0.02 + cushD / 2
+  const pillowWhite = mat(0xf2f0ec, { roughness: 0.9 })
+  const pillowGrey = mat(0x9a9c9e, { roughness: 0.9 })
+  const pillowDark = mat(0x4a4e52, { roughness: 0.9 })
 
-  const pillow2 = new THREE.Mesh(
-    new THREE.BoxGeometry(0.28, 0.22, 0.1),
-    mat(0xa89078, { roughness: 0.9 }),
-  )
-  pillow2.position.set(chaiseX + 0.1, seatY + 0.28, chaiseZ + 0.15)
-  pillow2.rotation.set(0.05, 0.5, 0.1)
-  pillow2.castShadow = true
-  group.add(pillow2)
+  addPillow(group, pillowWhite, {
+    w: 0.32,
+    h: 0.26,
+    d: 0.11,
+    x: 0.05,
+    y: pillowSeatY + 0.15,
+    z: rearCushFrontZ + 0.095,
+    rot: [0.015, 0.08, 0.02],
+  })
+  addPillow(group, pillowGrey, {
+    w: 0.3,
+    h: 0.26,
+    d: 0.11,
+    x: 0.55,
+    y: pillowSeatY + 0.145,
+    z: rearCushFrontZ + 0.09,
+    rot: [0.02, -0.12, -0.03],
+  })
+  addPillow(group, pillowDark, {
+    w: 0.28,
+    h: 0.24,
+    d: 0.1,
+    x: 0.95,
+    y: pillowSeatY + 0.135,
+    z: rearCushFrontZ + 0.09,
+    rot: [0.02, 0.08, 0.015],
+  })
+  addPillow(group, pillowGrey, {
+    w: 0.3,
+    h: 0.24,
+    d: 0.11,
+    x: sideCushInnerX + 0.1,
+    y: pillowSeatY + 0.14,
+    z: chaiseZ - 0.05,
+    rot: [0.015, Math.PI / 2 + 0.06, 0.01],
+  })
 
   // Pulled back from the TV for clearer viewing distance
   group.position.set(-2.55, 0, 1.45)

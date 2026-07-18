@@ -88,6 +88,91 @@ body,
   border-color: rgba(28, 36, 32, 0.35);
 }
 
+/* Floating focus bubble (beside vinyl / bathroom mirror) */
+.focus-helper {
+  position: fixed;
+  z-index: 4;
+  max-width: min(260px, 42vw);
+  padding: 1rem 1.15rem;
+  pointer-events: none;
+  color: var(--ink);
+  background: rgba(245, 241, 234, 0.96);
+  border: 1px solid rgba(28, 36, 32, 0.1);
+  border-radius: 1.35rem;
+  backdrop-filter: blur(12px);
+  box-shadow:
+    0 12px 32px rgba(28, 36, 32, 0.14),
+    0 2px 6px rgba(28, 36, 32, 0.06);
+  transition: opacity 0.2s ease;
+}
+
+.focus-helper[hidden] {
+  display: none;
+}
+
+/* Speech-bubble tail pointing toward the focused screen */
+.focus-helper::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  background: rgba(245, 241, 234, 0.96);
+  border: 1px solid rgba(28, 36, 32, 0.1);
+  transform: translateY(-50%) rotate(45deg);
+  box-shadow: none;
+}
+
+.focus-helper[data-side="right"]::after {
+  left: -6px;
+  border-right: 0;
+  border-top: 0;
+}
+
+.focus-helper[data-side="left"]::after {
+  right: -6px;
+  border-left: 0;
+  border-bottom: 0;
+}
+
+.focus-helper__title {
+  margin: 0;
+  font-family: "Fraunces", Georgia, serif;
+  font-weight: 600;
+  font-size: 1.2rem;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.focus-helper__blurb {
+  margin: 0.4rem 0 0;
+  font-family: "Source Sans 3", system-ui, sans-serif;
+  font-size: 0.88rem;
+  line-height: 1.4;
+  color: var(--hint);
+}
+
+.focus-helper__link {
+  display: inline-block;
+  margin-top: 0.65rem;
+  pointer-events: auto;
+  font-family: "Source Sans 3", system-ui, sans-serif;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+  cursor: pointer;
+}
+
+.focus-helper__link[hidden] {
+  display: none;
+}
+
+.focus-helper__link:hover {
+  opacity: 0.7;
+}
+
 .brand {
   font-family: "Fraunces", Georgia, serif;
   font-optical-sizing: auto;
@@ -107,48 +192,6 @@ body,
   transition: opacity 0.25s ease;
 }
 
-.credits {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 2;
-  padding: 0.75rem clamp(1.25rem, 3vw, 2rem) 1rem;
-  pointer-events: none;
-  text-align: center;
-  transition: opacity 0.35s ease;
-}
-
-.credits p {
-  display: inline-block;
-  pointer-events: auto;
-  font-family: "Source Sans 3", system-ui, sans-serif;
-  font-size: 0.78rem;
-  font-weight: 400;
-  letter-spacing: 0.02em;
-  color: var(--hint);
-  background: rgba(232, 239, 233, 0.72);
-  backdrop-filter: blur(8px);
-  padding: 0.4rem 0.75rem;
-  border: 1px solid rgba(28, 36, 32, 0.1);
-}
-
-.credits a {
-  color: var(--ink);
-  text-decoration: underline;
-  text-decoration-color: rgba(28, 36, 32, 0.25);
-  text-underline-offset: 0.15em;
-}
-
-.credits a:hover {
-  text-decoration-color: rgba(28, 36, 32, 0.55);
-}
-
-.hud.is-dimmed ~ .credits {
-  opacity: 0;
-  pointer-events: none;
-}
-
 .hud-actions {
   position: fixed;
   top: clamp(1.25rem, 3vw, 2rem);
@@ -165,7 +208,7 @@ body,
   pointer-events: none;
 }
 
-.tod-toggle {
+.resume-link {
   appearance: none;
   border: 1px solid rgba(28, 36, 32, 0.18);
   background: rgba(232, 239, 233, 0.92);
@@ -175,7 +218,7 @@ body,
   font-weight: 500;
   letter-spacing: 0.01em;
   padding: 0.55rem 0.9rem;
-  cursor: pointer;
+  text-decoration: none;
   pointer-events: auto;
   backdrop-filter: blur(8px);
   transition:
@@ -183,7 +226,7 @@ body,
     border-color 0.2s ease;
 }
 
-.tod-toggle:hover {
+.resume-link:hover {
   background: #fff;
   border-color: rgba(28, 36, 32, 0.35);
 }
@@ -550,6 +593,18 @@ body,
   color: var(--screen-muted);
 }
 
+.folio-resume {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--screen-accent);
+  text-decoration: none;
+}
+
+.folio-resume:hover {
+  text-decoration: underline;
+}
+
 .folio-detail {
   padding-top: 2px;
 }
@@ -668,64 +723,6 @@ body.is-pointer .css3d-layer {
   height: 100%;
 }
 
-.earworms-chrome {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-shrink: 0;
-  padding: 14px 18px;
-  background: rgba(8, 12, 18, 0.92);
-  border-bottom: 1px solid rgba(232, 238, 244, 0.1);
-  opacity: 0;
-  max-height: 0;
-  padding-top: 0;
-  padding-bottom: 0;
-  border-bottom-width: 0;
-  overflow: hidden;
-  transition:
-    opacity 0.25s ease,
-    max-height 0.25s ease,
-    padding 0.25s ease,
-    border-width 0.25s ease;
-}
-
-.earworms-screen.is-interactive .earworms-chrome {
-  opacity: 1;
-  max-height: 64px;
-  padding: 14px 18px;
-  border-bottom-width: 1px;
-}
-
-.earworms-chrome__title {
-  font-family: "Fraunces", Georgia, serif;
-  font-size: 20px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-}
-
-.earworms-close {
-  appearance: none;
-  border: 0;
-  background: transparent;
-  color: rgba(232, 238, 244, 0.55);
-  font-size: 18px;
-  line-height: 1;
-  padding: 6px 8px;
-  cursor: pointer;
-  opacity: 0;
-  pointer-events: none;
-  transition: color 0.2s ease, opacity 0.2s ease;
-}
-
-.earworms-screen.is-interactive .earworms-close {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.earworms-close:hover {
-  color: #e8eef4;
-}
-
 .earworms-viewport {
   position: relative;
   flex: 1;
@@ -799,8 +796,8 @@ body.is-pointer .css3d-layer {
 /* —— PoopyHooch screen (CSS3D on the bathroom mirror) —— */
 
 .poopyhooch-screen {
-  width: 550px;
-  height: 700px;
+  width: 850px;
+  height: 1050px;
   overflow: hidden;
   border-radius: 2px;
   background: #14181c;
@@ -824,62 +821,6 @@ body.is-pointer .css3d-layer {
   flex-direction: column;
   width: 100%;
   height: 100%;
-}
-
-.poopyhooch-chrome {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-shrink: 0;
-  background: rgba(10, 14, 18, 0.94);
-  border-bottom: 1px solid rgba(232, 238, 244, 0.1);
-  opacity: 0;
-  max-height: 0;
-  padding: 0 18px;
-  border-bottom-width: 0;
-  overflow: hidden;
-  transition:
-    opacity 0.25s ease,
-    max-height 0.25s ease,
-    padding 0.25s ease,
-    border-width 0.25s ease;
-}
-
-.poopyhooch-screen.is-interactive .poopyhooch-chrome {
-  opacity: 1;
-  max-height: 64px;
-  padding: 14px 18px;
-  border-bottom-width: 1px;
-}
-
-.poopyhooch-chrome__title {
-  font-family: "Fraunces", Georgia, serif;
-  font-size: 20px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-}
-
-.poopyhooch-close {
-  appearance: none;
-  border: 0;
-  background: transparent;
-  color: rgba(232, 238, 244, 0.55);
-  font-size: 18px;
-  line-height: 1;
-  padding: 6px 8px;
-  cursor: pointer;
-  opacity: 0;
-  pointer-events: none;
-  transition: color 0.2s ease, opacity 0.2s ease;
-}
-
-.poopyhooch-screen.is-interactive .poopyhooch-close {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.poopyhooch-close:hover {
-  color: #e8eef4;
 }
 
 .poopyhooch-viewport {

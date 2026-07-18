@@ -99,27 +99,65 @@ function createSideTable({
     const handle = box(0.012, 0.035, 0.04, mat(0xe8ddd0, { roughness: 0.55 }))
     handle.position.set(0.08, topY + 0.05, 0.02)
     group.add(handle)
-  } else if (prop === 'plant') {
-    const pot = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.04, 0.035, 0.06, 10),
-      mat(0xa67c52, { roughness: 0.8 }),
+  } else if (prop === 'lamp') {
+    const ceramic = mat(0xd8d0c4, { roughness: 0.55 })
+    const brass = mat(0xb8975a, { metalness: 0.7, roughness: 0.35 })
+    const shadeMat = new THREE.MeshStandardMaterial({
+      color: 0xf2ead8,
+      roughness: 0.85,
+      metalness: 0,
+      emissive: 0xf0d090,
+      emissiveIntensity: 0.25,
+      side: THREE.DoubleSide,
+    })
+
+    const base = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.04, 0.05, 0.04, 16),
+      ceramic,
     )
-    pot.position.set(-0.02, topY + 0.04, 0.03)
-    pot.castShadow = true
-    group.add(pot)
-    const leafMat = mat(0x3a7a45, { roughness: 0.75, side: THREE.DoubleSide })
-    for (let i = 0; i < 4; i++) {
-      const leaf = new THREE.Mesh(new THREE.PlaneGeometry(0.06, 0.12), leafMat)
-      const a = (i / 4) * Math.PI * 2
-      leaf.position.set(
-        -0.02 + Math.cos(a) * 0.02,
-        topY + 0.12,
-        0.03 + Math.sin(a) * 0.02,
-      )
-      leaf.rotation.z = Math.cos(a) * 0.4
-      leaf.rotation.x = -0.3
-      group.add(leaf)
-    }
+    base.position.set(0, topY + 0.025, 0)
+    base.castShadow = true
+    group.add(base)
+
+    const stem = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.008, 0.01, 0.18, 10),
+      brass,
+    )
+    stem.position.set(0, topY + 0.13, 0)
+    stem.castShadow = true
+    group.add(stem)
+
+    const shade = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.07, 0.09, 0.1, 16, 1, true),
+      shadeMat,
+    )
+    shade.position.set(0, topY + 0.26, 0)
+    shade.castShadow = true
+    group.add(shade)
+
+    const shadeTop = new THREE.Mesh(
+      new THREE.CircleGeometry(0.065, 16),
+      shadeMat,
+    )
+    shadeTop.rotation.x = -Math.PI / 2
+    shadeTop.position.set(0, topY + 0.31, 0)
+    group.add(shadeTop)
+
+    const bulb = new THREE.Mesh(
+      new THREE.SphereGeometry(0.022, 10, 10),
+      new THREE.MeshStandardMaterial({
+        color: 0xfff2d0,
+        emissive: 0xffd080,
+        emissiveIntensity: 0.7,
+        roughness: 0.4,
+      }),
+    )
+    bulb.position.set(0, topY + 0.24, 0)
+    group.add(bulb)
+
+    const light = new THREE.PointLight(0xffd9a0, 0.35, 2.2, 2)
+    light.position.set(0, topY + 0.24, 0)
+    group.add(light)
   }
 
   return group
@@ -140,7 +178,7 @@ export function createSideTables() {
   lounge.position.set(-3.55, 0, 2.75)
   group.add(lounge)
 
-  // Outside the main-run right arm (room side)
+  // Outside the main-run right arm (room side) — aligned with the sectional
   const chaise = createSideTable({
     style: 'square',
     width: 0.38,
@@ -149,8 +187,7 @@ export function createSideTables() {
     woodColor: 0x5c4330,
     prop: 'mug',
   })
-  chaise.position.set(-0.95, 0, 1.55)
-  chaise.rotation.y = 0.2
+  chaise.position.set(-0.95, 0, 1.45)
   group.add(chaise)
 
   // Right of the listening chair (facing turntable), offset along the chair's right
@@ -160,7 +197,7 @@ export function createSideTables() {
     radius: 0.2,
     topY: 0.52,
     woodColor: 0x6b5340,
-    prop: 'plant',
+    prop: 'lamp',
   })
   listening.position.set(-1.45, 0, -0.85)
   group.add(listening)

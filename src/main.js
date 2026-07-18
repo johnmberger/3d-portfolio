@@ -13,15 +13,17 @@ import { createRug } from './objects/rug.js'
 import { createDog, updateDog } from './objects/dog.js'
 import { createWallArt } from './objects/wallArt.js'
 import { createBathroom, updateBathroom } from './objects/bathroom.js'
-import { createCreditsPlaque } from './objects/credits.js'
+import { createCreditsPlaque, updateCreditsPlaque } from './objects/credits.js'
 import { createCouch } from './objects/couch.js'
 import { createArmchair } from './objects/armchair.js'
 import { createTV, updateTV } from './objects/tv.js'
 import { createKitchenette } from './objects/kitchenette.js'
 import { createSideTables } from './objects/sideTables.js'
+import { createRoundCoffeeTable, updateCandle } from './objects/coffeeTable.js'
+import { createWallInstruments } from './objects/guitar.js'
 import { WALL_POS } from './objects/roomConstants.js'
 import { createCameraRig } from './interaction/cameraRig.js'
-import { createTimeOfDay } from './interaction/timeOfDay.js'
+import { createCameraBounds } from './interaction/cameraBounds.js'
 import { createHoverHighlight } from './interaction/hoverHighlight.js'
 import {
   createCSS3DRenderer,
@@ -31,17 +33,20 @@ import {
 import {
   createEarwormsScreen,
   updateEarwormsVisibility,
+  EARWORMS_URL,
 } from './ui/earwormsScreen.js'
 import {
   createPoopyHoochScreen,
   updatePoopyHoochVisibility,
+  POOPYHOOCH_URL,
 } from './ui/poopyhoochScreen.js'
+import { createFocusHelper } from './ui/focusHelper.js'
 import { createLoadingScreen } from './ui/loadingScreen.js'
 
 RectAreaLightUniformsLib.init()
 
 const EXPLORE_HINT =
-  'Drag to look · Scroll to zoom · Click monitor, turntable, or bathroom'
+  'Drag to look · Scroll to zoom · Click monitor, turntable, bathroom, or credits'
 
 const loading = createLoadingScreen(document.body)
 loading.setProgress(0.15, 'Building the room…')
@@ -51,7 +56,6 @@ const canvas = document.querySelector('#webgl')
 const hud = document.querySelector('.hud')
 const hint = document.querySelector('.hint')
 const exitBtn = document.querySelector('.exit-screen')
-const todBtn = document.querySelector('.tod-toggle')
 const hudActions = document.querySelector('.hud-actions')
 
 const isMobile =
@@ -79,6 +83,9 @@ const scene = new THREE.Scene()
 scene.background = new THREE.Color(0xd4c4b0)
 scene.fog = new THREE.Fog(0xd4c4b0, 9, 20)
 
+// TEMP: set true to unlock orbit limits and disable screen focus
+const FREE_CAMERA = false
+
 const camera = new THREE.PerspectiveCamera(
   44,
   window.innerWidth / window.innerHeight,
@@ -93,11 +100,19 @@ controls.target.set(0.1, 0.7, 0.35)
 controls.enableDamping = true
 controls.dampingFactor = 0.06
 controls.enablePan = true
-controls.panSpeed = 0.6
-controls.minDistance = 1.8
-controls.maxDistance = 9
-controls.minPolarAngle = 0.15
-controls.maxPolarAngle = Math.PI / 2 - 0.08
+controls.panSpeed = FREE_CAMERA ? 1.2 : 0.6
+controls.screenSpacePanning = true
+if (FREE_CAMERA) {
+  controls.minDistance = 0.05
+  controls.maxDistance = 40
+  controls.minPolarAngle = 0
+  controls.maxPolarAngle = Math.PI
+} else {
+  controls.minDistance = 1.8
+  controls.maxDistance = 9
+  controls.minPolarAngle = 0.15
+  controls.maxPolarAngle = Math.PI / 2 - 0.08
+}
 controls.update()
 
 const ambient = new THREE.AmbientLight(0xe8d5c4, 0.35)
@@ -120,7 +135,7 @@ sun.shadow.normalBias = 0.035
 scene.add(sun)
 
 const fill = new THREE.DirectionalLight(0x8fa0c4, 0.22)
-fill.position.set(3.2, 4, 2.2)
+fill.position.set(3.2, 3.4, 2.2)
 scene.add(fill)
 
 const windowGlow = new THREE.PointLight(0xffb070, 1.05, 8, 2)
@@ -140,7 +155,12 @@ const { group: bicycle, ready: bikeReady } = createBicycle()
 const monitor = createMonitor()
 const { group: dining, ready: diningReady } = createDiningTable()
 const turntable = createTurntable()
-const lamp = createFloorLamp()
+// Front-right corner of the lounge rug (open end of the sectional), aimed at the TV
+const lamp = createFloorLamp({
+  position: [-0.88, 0, 0.78],
+  rotationY: -Math.PI / 2,
+  name: 'loungeLamp',
+})
 const rug = createRug()
 const { group: dog, ready: dogReady } = createDog()
 const wallArt = createWallArt()
@@ -152,11 +172,15 @@ const listeningChair = createArmchair({
   rotationY: 2.45 + Math.PI / 2,
   fabricColor: 0xa89880,
   fabricDeepColor: 0x96866e,
-  pillowColor: 0x7a6a58,
+  pillowColor: 0x8a8e92,
 })
 const tv = createTV()
 const kitchenette = createKitchenette()
 const sideTables = createSideTables()
+const roundCoffee = createRoundCoffeeTable({
+  position: [-1.85, 0, 2.65],
+})
+const { group: instruments, ready: instrumentsReady } = createWallInstruments()
 scene.add(
   room,
   plants,
@@ -175,42 +199,31 @@ scene.add(
   tv,
   kitchenette,
   sideTables,
+  roundCoffee,
+  instruments,
 )
 
 loading.setProgress(0.65, 'Warming the lights…')
-Promise.allSettled([dogReady, diningReady, bikeReady]).then(() => {
+Promise.allSettled([dogReady, diningReady, bikeReady, instrumentsReady]).then(() => {
   loading.setProgress(0.85, 'Almost ready…')
 })
 dogReady.catch((err) => console.warn('Shiba failed to load', err))
 diningReady.catch((err) => console.warn('Food models failed to load', err))
 bikeReady.catch((err) => console.warn('Bicycle failed to load', err))
+instrumentsReady.catch((err) => console.warn('Bass model failed to load', err))
 
 const portfolioUi = createPortfolioScreen(monitor)
 const earwormsUi = createEarwormsScreen(turntable)
 earwormsUi.preload()
 const poopyUi = createPoopyHoochScreen(bathroom)
 poopyUi.preload()
+const focusHelper = createFocusHelper(app)
 const rig = createCameraRig(camera, controls)
+const cameraBounds = createCameraBounds(camera, controls)
 const monitorScreen = monitor.getObjectByName('screen')
 const earwormsScreen = turntable.getObjectByName('screen')
 const bathroomScreen = bathroom.getObjectByName('screen')
-
-const timeOfDay = createTimeOfDay({
-  scene,
-  renderer,
-  ambient,
-  sun,
-  fill,
-  windowGlow,
-  windowRim,
-  room,
-  button: todBtn,
-})
-
-todBtn.addEventListener('click', () => {
-  if (rig.isFocused || rig.isBusy) return
-  timeOfDay.toggle()
-})
+const creditsScreen = creditsPlaque.getObjectByName('screen')
 
 const raycaster = new THREE.Raycaster()
 const pointer = new THREE.Vector2()
@@ -220,6 +233,7 @@ const interactiveRoots = {
   monitor,
   turntable,
   bathroom,
+  credits: creditsPlaque,
 }
 let activeFocus = null
 let prevMode = 'explore'
@@ -252,12 +266,10 @@ function setFocusedUi(on) {
   exitBtn.hidden = !on
   if (hudActions) hudActions.style.opacity = on ? '0' : '1'
   if (hudActions) hudActions.style.pointerEvents = on ? 'none' : 'auto'
-  const credits = document.querySelector('.credits')
-  if (credits) credits.style.opacity = on ? '0' : '1'
 }
 
 function openPortfolio() {
-  if (rig.isBusy || rig.isFocused) return
+  if (FREE_CAMERA || rig.isBusy || rig.isFocused) return
   hoverHighlight.clear()
   activeFocus = 'portfolio'
   portfolioUi.showList()
@@ -266,21 +278,49 @@ function openPortfolio() {
 }
 
 function openEarworms() {
-  if (rig.isBusy || rig.isFocused) return
+  if (FREE_CAMERA || rig.isBusy || rig.isFocused) return
   hoverHighlight.clear()
   activeFocus = 'earworms'
   earwormsUi.show()
+  focusHelper.show({
+    title: 'Earworms',
+    blurb: 'What I\'ve been listening to lately.',
+    href: EARWORMS_URL,
+    anchor: earwormsScreen,
+    width: earwormsUi.screenSize.width,
+  })
   rig.enterFocus(earwormsScreen, earwormsUi.screenSize)
   setHint('Dropping the needle…')
 }
 
 function openPoopyHooch() {
-  if (rig.isBusy || rig.isFocused) return
+  if (FREE_CAMERA || rig.isBusy || rig.isFocused) return
   hoverHighlight.clear()
   activeFocus = 'poopyhooch'
   poopyUi.show()
+  focusHelper.show({
+    title: 'Poop the Hooch',
+    blurb: 'Is the Chattahoochee Poopy?',
+    href: POOPYHOOCH_URL,
+    anchor: bathroomScreen,
+    width: poopyUi.screenSize.width,
+  })
   rig.enterFocus(bathroomScreen, poopyUi.screenSize)
   setHint('Checking the mirror…')
+}
+
+function openCredits() {
+  if (FREE_CAMERA || rig.isBusy || rig.isFocused) return
+  hoverHighlight.clear()
+  activeFocus = 'credits'
+  focusHelper.show({
+    title: 'Credits',
+    blurb: 'Models that helped build this room.',
+    anchor: creditsScreen,
+    width: creditsPlaque.userData.screenSize.width,
+  })
+  rig.enterFocus(creditsScreen, creditsPlaque.userData.screenSize)
+  setHint('Reading the plaque…')
 }
 
 function closeFocus() {
@@ -289,6 +329,7 @@ function closeFocus() {
   setEarwormsInteractive(false)
   setPoopyInteractive(false)
   setFocusedUi(false)
+  focusHelper.hide()
   if (activeFocus === 'portfolio') portfolioUi.showList()
   if (activeFocus === 'earworms') earwormsUi.hide()
   if (activeFocus === 'poopyhooch') poopyUi.hide()
@@ -302,10 +343,18 @@ function pickInteractive(clientX, clientY) {
   pointer.y = -(clientY / window.innerHeight) * 2 + 1
   raycaster.setFromCamera(pointer, camera)
 
-  const hits = raycaster.intersectObjects([monitor, turntable, bathroom], true)
+  const hits = raycaster.intersectObjects(
+    [monitor, turntable, bathroom, creditsPlaque],
+    true,
+  )
   for (const hit of hits) {
     const kind = hit.object.userData.interactive
-    if (kind === 'monitor' || kind === 'turntable' || kind === 'bathroom') {
+    if (
+      kind === 'monitor' ||
+      kind === 'turntable' ||
+      kind === 'bathroom' ||
+      kind === 'credits'
+    ) {
       return kind
     }
   }
@@ -324,7 +373,8 @@ canvas.addEventListener('pointermove', (event) => {
   setPointer(Boolean(hoverTarget))
   if (hoverTarget === 'monitor') setHint('Click to open resume')
   else if (hoverTarget === 'turntable') setHint('Click to open Earworms')
-  else if (hoverTarget === 'bathroom') setHint('Click to open PoopyHooch')
+  else if (hoverTarget === 'bathroom') setHint('Click to open Poop the Hooch')
+  else if (hoverTarget === 'credits') setHint('Click to read credits')
   else setHint(EXPLORE_HINT)
 })
 
@@ -341,22 +391,15 @@ canvas.addEventListener('pointerdown', (event) => {
   } else if (kind === 'bathroom') {
     event.preventDefault()
     openPoopyHooch()
+  } else if (kind === 'credits') {
+    event.preventDefault()
+    openCredits()
   }
 })
 
 exitBtn.addEventListener('click', () => closeFocus())
 
 portfolioUi.closeBtn.addEventListener('click', (e) => {
-  e.stopPropagation()
-  closeFocus()
-})
-
-earwormsUi.closeBtn.addEventListener('click', (e) => {
-  e.stopPropagation()
-  closeFocus()
-})
-
-poopyUi.closeBtn.addEventListener('click', (e) => {
   e.stopPropagation()
   closeFocus()
 })
@@ -381,7 +424,7 @@ function onResize() {
 window.addEventListener('resize', onResize)
 
 setHint(EXPLORE_HINT)
-updateFloorLamp(lamp, { night: false })
+updateFloorLamp(lamp)
 
 function tick(timestamp) {
   timer.update(timestamp)
@@ -390,10 +433,8 @@ function tick(timestamp) {
 
   updatePlants(plants, elapsed)
   updateDog(dog, elapsed)
+  updateCandle(roundCoffee, elapsed, delta)
   updateWindowParallax(room, camera)
-  timeOfDay.update(delta)
-  updateFloorLamp(lamp, { night: timeOfDay.isNight })
-
   const mode = rig.update(delta)
   if (mode !== prevMode) {
     if (mode === 'focused') {
@@ -407,18 +448,22 @@ function tick(timestamp) {
       } else if (activeFocus === 'poopyhooch') {
         setPoopyInteractive(true)
         setHint('Back to room · Esc')
+      } else if (activeFocus === 'credits') {
+        setHint('Back to room · Esc')
       }
     } else if (mode === 'explore') {
       setPortfolioInteractive(false)
       setEarwormsInteractive(false)
       setPoopyInteractive(false)
       setFocusedUi(false)
+      focusHelper.hide()
       setHint(EXPLORE_HINT)
     }
     prevMode = mode
   }
 
   const focusing = rig.isFocused || mode === 'toFocus'
+  focusHelper.update(camera)
   updateMonitor(monitor, elapsed, {
     focused: focusing && activeFocus === 'portfolio',
   })
@@ -428,19 +473,36 @@ function tick(timestamp) {
   updateBathroom(bathroom, elapsed, {
     focused: focusing && activeFocus === 'poopyhooch',
   })
+  updateCreditsPlaque(creditsPlaque, elapsed, {
+    focused: focusing && activeFocus === 'credits',
+  })
   updateTV(tv, elapsed)
-  updatePortfolioVisibility(portfolioUi, camera, monitorScreen)
+  // CSS3D ignores WebGL depth — keep overlays off while the camera is moving so
+  // room objects (lamps, furniture) correctly occlude the WebGL stand-ins.
+  updatePortfolioVisibility(portfolioUi, camera, monitorScreen, {
+    active:
+      mode === 'explore' || (rig.isFocused && activeFocus === 'portfolio'),
+  })
   updateEarwormsVisibility(earwormsUi, camera, earwormsScreen, {
-    active: focusing && activeFocus === 'earworms',
+    active: rig.isFocused && activeFocus === 'earworms',
   })
   updatePoopyHoochVisibility(poopyUi, camera, bathroomScreen, {
-    active: focusing && activeFocus === 'poopyhooch',
+    active: rig.isFocused && activeFocus === 'poopyhooch',
   })
 
   if (controls.enabled) controls.update()
+  if (!FREE_CAMERA && !rig.isBusy && !rig.isFocused) {
+    cameraBounds.clamp()
+  }
   renderer.render(scene, camera)
-  // CSS3D is only needed while a screen UI is in play
-  if (focusing || portfolioUi.object.visible) {
+  // Keep CSS3D in sync during focus transitions even when overlays are hidden,
+  // so exit animations don't leave a frozen DOM layer on screen.
+  if (
+    mode !== 'explore' ||
+    portfolioUi.object.visible ||
+    earwormsUi.object.visible ||
+    poopyUi.object.visible
+  ) {
     cssRenderer.render(scene, camera)
   }
 

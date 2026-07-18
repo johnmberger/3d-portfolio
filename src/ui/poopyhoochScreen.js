@@ -2,10 +2,11 @@ import * as THREE from 'three'
 import { CSS3DObject } from 'three/addons/renderers/CSS3DRenderer.js'
 
 const POOPYHOOCH_URL = 'https://www.poopthehooch.com'
-const SCREEN_PX_W = 550
-const SCREEN_PX_H = 700
-const WORLD_W = 0.55
-const WORLD_H = 0.7
+export { POOPYHOOCH_URL }
+const SCREEN_PX_W = 850
+const SCREEN_PX_H = 1050
+const WORLD_W = 0.85
+const WORLD_H = 1.05
 const PRELOAD_DELAY_MS = 2400
 
 const _screenPos = new THREE.Vector3()
@@ -22,10 +23,6 @@ export function createPoopyHoochScreen(bathroom) {
 
   element.innerHTML = `
     <div class="poopyhooch-frame">
-      <header class="poopyhooch-chrome">
-        <p class="poopyhooch-chrome__title">PoopyHooch</p>
-        <button class="poopyhooch-close" type="button" aria-label="Close PoopyHooch">✕</button>
-      </header>
       <div class="poopyhooch-viewport">
         <div class="poopyhooch-placeholder">
           <p class="poopyhooch-placeholder__kicker">Mirror mirror</p>
@@ -33,7 +30,7 @@ export function createPoopyHoochScreen(bathroom) {
         </div>
         <iframe
           class="poopyhooch-iframe"
-          title="PoopyHooch"
+          title="Poop the Hooch"
           referrerpolicy="no-referrer-when-downgrade"
           allow="autoplay; encrypted-media"
         ></iframe>
@@ -42,7 +39,6 @@ export function createPoopyHoochScreen(bathroom) {
   `
 
   const iframe = element.querySelector('.poopyhooch-iframe')
-  const closeBtn = element.querySelector('.poopyhooch-close')
 
   let started = false
   let ready = false
@@ -88,20 +84,21 @@ export function createPoopyHoochScreen(bathroom) {
   function hide() {
     revealWhenReady = false
     element.classList.remove('is-loaded')
+    object.visible = false
+    element.style.display = 'none'
   }
 
   return {
     element,
     object,
-    closeBtn,
     preload,
     show,
     hide,
-    screenSize: { width: WORLD_W, height: WORLD_H, fill: 0.78, minDistance: 2.85 },
+    screenSize: { width: WORLD_W, height: WORLD_H, fill: 0.72, minDistance: 2.6 },
   }
 }
 
-/** CSS3D ignores WebGL depth — only show while focused, and not from behind. */
+/** CSS3D ignores WebGL depth — only show once focused (not mid-zoom), and not from behind. */
 export function updatePoopyHoochVisibility(
   { object },
   camera,
@@ -110,10 +107,14 @@ export function updatePoopyHoochVisibility(
 ) {
   if (!active) {
     object.visible = false
+    // CSS3DRenderer only applies display:none during render — do it here so a
+    // skipped css pass can't leave the overlay frozen on screen.
+    object.element.style.display = 'none'
     return
   }
   screenMesh.getWorldPosition(_screenPos)
   _screenNormal.set(0, 0, 1).transformDirection(screenMesh.matrixWorld)
   _toCamera.subVectors(camera.position, _screenPos)
   object.visible = _toCamera.dot(_screenNormal) > 0.02
+  if (!object.visible) object.element.style.display = 'none'
 }

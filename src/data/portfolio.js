@@ -1,15 +1,17 @@
 /** Resume content for the monitor screen — sourced from LinkedIn / johnmberger.com. */
+import { RESUME_URL } from '../resumeUrl.js'
+
 export const portfolio = {
   name: 'John Berger',
   role: 'Senior Software Engineer',
   location: 'Atlanta, GA',
   blurb:
-    'Frontend-leaning full-stack engineer. I love philosophy (I majored in it!), technology, and design — calm interfaces, solid APIs, and tools people actually enjoy using.',
+    'Frontend-leaning full-stack engineer. I love philosophy (I majored in it!), technology, and design — I build intuitive websites, solid APIs, and tools people actually enjoy using.',
   email: 'hi@johnberger.dev',
   links: [
     { label: 'LinkedIn', href: 'https://www.linkedin.com/in/johnmberger/' },
     { label: 'GitHub', href: 'https://github.com/johnmberger' },
-    { label: 'Website', href: 'https://johnmberger.com/' },
+    { label: 'Resume', href: RESUME_URL },
   ],
   skills: [
     'TypeScript',

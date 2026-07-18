@@ -208,6 +208,82 @@ function createDeck() {
   return deck
 }
 
+/** Album-sleeve art matching the Earworms CSS placeholder. */
+function createSleeveArtTexture() {
+  const size = 512
+  const canvas = document.createElement('canvas')
+  canvas.width = size
+  canvas.height = size
+  const ctx = canvas.getContext('2d')
+
+  // Background — same 160° wash as .earworms-placeholder
+  const bg = ctx.createLinearGradient(0, 0, size * 0.55, size)
+  bg.addColorStop(0, '#1a2838')
+  bg.addColorStop(0.45, '#0c1018')
+  bg.addColorStop(1, '#2a1a14')
+  ctx.fillStyle = bg
+  ctx.fillRect(0, 0, size, size)
+
+  // Soft vignette
+  const vignette = ctx.createRadialGradient(
+    size * 0.5,
+    size * 0.42,
+    size * 0.1,
+    size * 0.5,
+    size * 0.5,
+    size * 0.72,
+  )
+  vignette.addColorStop(0, 'rgba(0,0,0,0)')
+  vignette.addColorStop(1, 'rgba(0,0,0,0.35)')
+  ctx.fillStyle = vignette
+  ctx.fillRect(0, 0, size, size)
+
+  // Vinyl disc (matches .earworms-placeholder::before)
+  const cx = size * 0.5
+  const cy = size * 0.42
+  const r = size * 0.21
+  const disc = ctx.createRadialGradient(cx, cy, 0, cx, cy, r)
+  disc.addColorStop(0, '#c45a3a')
+  disc.addColorStop(0.18, '#c45a3a')
+  disc.addColorStop(0.19, '#1a1210')
+  disc.addColorStop(0.22, '#1a1210')
+  disc.addColorStop(0.23, '#0a0a0c')
+  disc.addColorStop(0.7, '#0a0a0c')
+  disc.addColorStop(0.71, '#222222')
+  disc.addColorStop(1, '#222222')
+  ctx.beginPath()
+  ctx.arc(cx, cy, r, 0, Math.PI * 2)
+  ctx.fillStyle = disc
+  ctx.fill()
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)'
+  ctx.lineWidth = 2
+  ctx.stroke()
+
+  // Groove rings
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)'
+  ctx.lineWidth = 1
+  for (const t of [0.35, 0.48, 0.58, 0.66]) {
+    ctx.beginPath()
+    ctx.arc(cx, cy, r * t, 0, Math.PI * 2)
+    ctx.stroke()
+  }
+
+  // Title lockup
+  ctx.textAlign = 'center'
+  ctx.fillStyle = '#e8a05a'
+  ctx.font = '600 22px "Source Sans 3", system-ui, sans-serif'
+  ctx.fillText('NOW PLAYING', cx, size * 0.72)
+
+  ctx.fillStyle = 'rgba(232, 238, 244, 0.7)'
+  ctx.font = '500 28px "Fraunces", Georgia, serif'
+  ctx.fillText('Earworms', cx, size * 0.8)
+
+  const texture = new THREE.CanvasTexture(canvas)
+  texture.colorSpace = THREE.SRGBColorSpace
+  texture.anisotropy = 4
+  return texture
+}
+
 /** Upright LP sleeve — front face is the zoom / iframe target. */
 function createUprightRecord() {
   const record = new THREE.Group()
@@ -228,34 +304,6 @@ function createUprightRecord() {
   sleeve.castShadow = true
   record.add(sleeve)
 
-  const stripe = markInteractive(
-    new THREE.Mesh(
-      new THREE.PlaneGeometry(sleeveW * 0.92, 0.06),
-      new THREE.MeshStandardMaterial({
-        color: 0xe8a05a,
-        roughness: 0.6,
-        metalness: 0.05,
-        emissive: 0x3a2010,
-        emissiveIntensity: 0.15,
-      }),
-    ),
-  )
-  stripe.position.set(0, 0.08, sleeveD / 2 + 0.001)
-  record.add(stripe)
-
-  const titleBand = markInteractive(
-    new THREE.Mesh(
-      new THREE.PlaneGeometry(sleeveW * 0.7, 0.035),
-      new THREE.MeshStandardMaterial({
-        color: 0xd8e0e8,
-        roughness: 0.7,
-        metalness: 0,
-      }),
-    ),
-  )
-  titleBand.position.set(0, -0.12, sleeveD / 2 + 0.001)
-  record.add(titleBand)
-
   const disc = markInteractive(
     new THREE.Mesh(
       new THREE.CylinderGeometry(0.145, 0.145, 0.003, 40),
@@ -266,11 +314,13 @@ function createUprightRecord() {
   disc.position.set(0.06, 0, -0.01)
   record.add(disc)
 
+  const artMap = createSleeveArtTexture()
   const screenMat = new THREE.MeshStandardMaterial({
-    color: 0x0c1018,
-    emissive: 0x152030,
-    emissiveIntensity: 0.25,
-    roughness: 0.9,
+    map: artMap,
+    color: 0xffffff,
+    emissive: 0x1a2838,
+    emissiveIntensity: 0.22,
+    roughness: 0.85,
     metalness: 0,
   })
   const screen = markInteractive(
@@ -297,14 +347,75 @@ function createUprightRecord() {
   return record
 }
 
-function createExtraSleeve(color, lean = 0) {
-  const sleeve = new THREE.Mesh(
-    new THREE.BoxGeometry(0.32, 0.32, 0.01),
-    wood(color),
+/** Bookshelf speaker for the credenza ends. */
+function createSpeaker() {
+  const speaker = new THREE.Group()
+  speaker.name = 'speaker'
+
+  const w = 0.2
+  const h = 0.34
+  const d = 0.22
+  const cabMat = wood(0x3a2818)
+  const baffleMat = plastic(0x1a1a1c, { roughness: 0.85 })
+  const coneMat = plastic(0x2a2420, { roughness: 0.7 })
+  const dustMat = plastic(0x4a4038, { roughness: 0.9 })
+  const trimMat = plastic(0xb8b4ae, { metalness: 0.7, roughness: 0.35 })
+
+  const cab = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), cabMat)
+  cab.position.y = h / 2
+  cab.castShadow = true
+  speaker.add(cab)
+
+  const baffle = new THREE.Mesh(
+    new THREE.BoxGeometry(w - 0.012, h - 0.012, 0.012),
+    baffleMat,
   )
-  sleeve.castShadow = true
-  sleeve.rotation.y = lean
-  return sleeve
+  baffle.position.set(0, h / 2, d / 2 + 0.002)
+  speaker.add(baffle)
+
+  // Woofer
+  const woofer = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.068, 0.072, 0.014, 28),
+    coneMat,
+  )
+  woofer.rotation.x = Math.PI / 2
+  woofer.position.set(0, h * 0.38, d / 2 + 0.012)
+  speaker.add(woofer)
+
+  const dustCap = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.022, 0.022, 0.008, 16),
+    dustMat,
+  )
+  dustCap.rotation.x = Math.PI / 2
+  dustCap.position.set(0, h * 0.38, d / 2 + 0.02)
+  speaker.add(dustCap)
+
+  // Tweeter
+  const tweeterRing = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.028, 0.03, 0.01, 20),
+    trimMat,
+  )
+  tweeterRing.rotation.x = Math.PI / 2
+  tweeterRing.position.set(0, h * 0.72, d / 2 + 0.012)
+  speaker.add(tweeterRing)
+
+  const tweeter = new THREE.Mesh(
+    new THREE.SphereGeometry(0.016, 12, 10, 0, Math.PI * 2, 0, Math.PI * 0.55),
+    plastic(0xd8d4ce, { metalness: 0.4, roughness: 0.4 }),
+  )
+  tweeter.rotation.x = Math.PI / 2
+  tweeter.position.set(0, h * 0.72, d / 2 + 0.018)
+  speaker.add(tweeter)
+
+  // Small badge / port hint
+  const badge = new THREE.Mesh(
+    new THREE.BoxGeometry(0.04, 0.012, 0.004),
+    trimMat,
+  )
+  badge.position.set(0, h * 0.12, d / 2 + 0.01)
+  speaker.add(badge)
+
+  return speaker
 }
 
 export function createTurntable() {
@@ -317,9 +428,33 @@ export function createTurntable() {
   const topY = cabinet.userData.topY
   const halfW = cabinet.userData.width / 2
 
-  // Deck sits on the left third of the long top
+  // Bookshelf speakers on each end
+  const speakerInset = 0.15
+  const speakerW = 0.2
+  const leftSpeakerX = -halfW + speakerInset
+  const rightSpeakerX = halfW - speakerInset
+
+  const leftSpeaker = createSpeaker()
+  leftSpeaker.position.set(leftSpeakerX, topY, 0.01)
+  leftSpeaker.rotation.y = 0.18
+  group.add(leftSpeaker)
+
+  const rightSpeaker = createSpeaker()
+  rightSpeaker.position.set(rightSpeakerX, topY, 0.01)
+  rightSpeaker.rotation.y = -0.18
+  group.add(rightSpeaker)
+
+  // Turntable + vinyl spaced evenly: speaker | gap | deck | gap | record | gap | speaker
+  const deckW = 0.42
+  const recordW = 0.4
+  const innerLeft = leftSpeakerX + speakerW / 2
+  const innerRight = rightSpeakerX - speakerW / 2
+  const gap = (innerRight - innerLeft - deckW - recordW) / 3
+  const deckX = innerLeft + gap + deckW / 2
+  const recordX = deckX + deckW / 2 + gap + recordW / 2
+
   const deck = createDeck()
-  deck.position.set(-halfW + 0.38, topY, 0.02)
+  deck.position.set(deckX, topY, 0.02)
   group.add(deck)
 
   const lid = markInteractive(
@@ -335,30 +470,15 @@ export function createTurntable() {
       }),
     ),
   )
-  lid.position.set(-halfW + 0.38, topY + 0.18, -0.12)
+  lid.position.set(deckX, topY + 0.18, -0.12)
   lid.rotation.x = -1.05
   group.add(lid)
 
-  // Interactive upright LP toward the right
   const upright = createUprightRecord()
-  upright.position.set(halfW - 0.42, topY + 0.2, 0.02)
+  upright.position.set(recordX, topY + 0.2, 0.02)
   upright.rotation.y = 0
   upright.rotation.x = 0
   group.add(upright)
-
-  // Extra decorative sleeves stacked beside it
-  const stack = new THREE.Group()
-  stack.position.set(halfW - 0.78, topY + 0.16, 0)
-  const sleeveA = createExtraSleeve(0x2a3a48, 0.08)
-  sleeveA.position.set(0.02, 0, -0.01)
-  stack.add(sleeveA)
-  const sleeveB = createExtraSleeve(0x5a3028, -0.06)
-  sleeveB.position.set(-0.04, 0, 0.01)
-  stack.add(sleeveB)
-  const sleeveC = createExtraSleeve(0x3a4a30, 0.14)
-  sleeveC.position.set(0.08, 0, -0.02)
-  stack.add(sleeveC)
-  group.add(stack)
 
   // Against the back wall, left of the window — vinyl faces into the room
   group.position.set(-2.85, 0, -3.45)

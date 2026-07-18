@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import { CSS3DObject, CSS3DRenderer } from 'three/addons/renderers/CSS3DRenderer.js'
 import { portfolio } from '../data/portfolio.js'
+import { RESUME_URL } from '../resumeUrl.js'
 
 const _screenPos = new THREE.Vector3()
 const _screenNormal = new THREE.Vector3()
@@ -93,6 +94,7 @@ function buildMarkup() {
           <div class="folio-contact">
             <a class="folio-mail" href="mailto:${escapeHtml(portfolio.email)}">${escapeHtml(portfolio.email)}</a>
             <p class="folio-links">${links}</p>
+            <a class="folio-resume" href="${RESUME_URL}" target="_blank" rel="noreferrer">Full resume →</a>
           </div>
         </section>
 
@@ -236,12 +238,25 @@ export function createPortfolioScreen(monitor) {
   return { element, object, closeBtn, showList }
 }
 
-/** CSS3D ignores WebGL depth — hide the UI when the camera is behind the screen. */
-export function updatePortfolioVisibility({ object }, camera, screenMesh) {
+/** CSS3D ignores WebGL depth — hide when behind the screen, or while the camera is mid-transition. */
+export function updatePortfolioVisibility(
+  { object },
+  camera,
+  screenMesh,
+  { active = true } = {},
+) {
+  if (!active) {
+    object.visible = false
+    // CSS3DRenderer only applies display:none during render — do it here so a
+    // skipped css pass can't leave the overlay frozen on screen.
+    object.element.style.display = 'none'
+    return
+  }
   screenMesh.getWorldPosition(_screenPos)
   _screenNormal.set(0, 0, 1).transformDirection(screenMesh.matrixWorld)
   _toCamera.subVectors(camera.position, _screenPos)
   object.visible = _toCamera.dot(_screenNormal) > 0.02
+  if (!object.visible) object.element.style.display = 'none'
 }
 
 export function createCSS3DRenderer(container) {

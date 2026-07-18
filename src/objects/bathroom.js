@@ -174,7 +174,68 @@ function createToilet() {
   supply.position.set(0.18, 0.25, -0.2)
   toilet.add(supply)
 
+  toilet.add(createSquattyPotty())
+
   return toilet
+}
+
+/** Small U-shaped footstool wrapping the front of the bowl. */
+function createSquattyPotty() {
+  const group = new THREE.Group()
+  group.name = 'squattyPotty'
+
+  const plastic = mat(0xe6e0d4, { roughness: 0.5 })
+  const h = 0.15
+  const outerW = 0.4
+  const armW = 0.085
+  const armD = 0.22
+  const frontT = 0.11
+  const halfW = outerW / 2
+
+  const add = (mesh, x, y, z) => {
+    markInteractive(mesh)
+    mesh.castShadow = true
+    mesh.receiveShadow = true
+    mesh.position.set(x, y, z)
+    group.add(mesh)
+  }
+
+  // Side arms hugging the bowl
+  for (const side of [-1, 1]) {
+    add(
+      new THREE.Mesh(new THREE.BoxGeometry(armW, h, armD), plastic),
+      side * (halfW - armW / 2),
+      h / 2,
+      0.21,
+    )
+  }
+
+  // Front step — arched cutout rising from the floor (classic Squatty Potty)
+  const archHalf = 0.095
+  const frontShape = new THREE.Shape()
+  frontShape.moveTo(-halfW, 0)
+  frontShape.lineTo(-archHalf, 0)
+  frontShape.absarc(0, 0, archHalf, Math.PI, 0, true)
+  frontShape.lineTo(halfW, 0)
+  frontShape.lineTo(halfW, h)
+  frontShape.lineTo(-halfW, h)
+  frontShape.closePath()
+
+  const frontGeo = new THREE.ExtrudeGeometry(frontShape, {
+    depth: frontT,
+    bevelEnabled: true,
+    bevelThickness: 0.006,
+    bevelSize: 0.005,
+    bevelSegments: 2,
+    curveSegments: 20,
+  })
+  // Elevation XY → stand upright facing ±Z
+  frontGeo.rotateY(Math.PI)
+  frontGeo.translate(0, 0, frontT / 2)
+
+  add(new THREE.Mesh(frontGeo, plastic), 0, 0, 0.32)
+
+  return group
 }
 
 function createSink() {

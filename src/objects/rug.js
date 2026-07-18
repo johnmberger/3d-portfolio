@@ -81,8 +81,94 @@ function makeRugMesh(w, d, texture, edgeColor = 0x4a3020) {
   return g
 }
 
+function createRoundRugTexture({
+  base = '#5a4838',
+  mid = '#7a6248',
+  deep = '#3e3024',
+  border = '#d4b896',
+  inner = '#2a2018',
+} = {}) {
+  const size = 512
+  const canvas = document.createElement('canvas')
+  canvas.width = size
+  canvas.height = size
+  const ctx = canvas.getContext('2d')
+  const c = size / 2
+
+  ctx.clearRect(0, 0, size, size)
+
+  const grad = ctx.createRadialGradient(c, c, 20, c, c, size * 0.48)
+  grad.addColorStop(0, mid)
+  grad.addColorStop(0.55, base)
+  grad.addColorStop(1, deep)
+  ctx.fillStyle = grad
+  ctx.beginPath()
+  ctx.arc(c, c, size * 0.48, 0, Math.PI * 2)
+  ctx.fill()
+
+  ctx.strokeStyle = border
+  ctx.lineWidth = 16
+  ctx.beginPath()
+  ctx.arc(c, c, size * 0.44, 0, Math.PI * 2)
+  ctx.stroke()
+
+  ctx.strokeStyle = inner
+  ctx.lineWidth = 4
+  ctx.beginPath()
+  ctx.arc(c, c, size * 0.38, 0, Math.PI * 2)
+  ctx.stroke()
+
+  for (let i = 0; i < 1800; i++) {
+    const a = Math.random() * Math.PI * 2
+    const r = Math.random() * size * 0.46
+    const x = c + Math.cos(a) * r
+    const y = c + Math.sin(a) * r
+    ctx.fillStyle = `rgba(255,220,180,${0.02 + Math.random() * 0.04})`
+    ctx.fillRect(x, y, 2, 1)
+  }
+
+  const tex = new THREE.CanvasTexture(canvas)
+  tex.colorSpace = THREE.SRGBColorSpace
+  tex.anisotropy = 4
+  return tex
+}
+
+function makeRoundRugMesh(diameter, texture, edgeColor = 0x4a3020) {
+  const g = new THREE.Group()
+  const r = diameter / 2
+
+  const mat = new THREE.MeshStandardMaterial({
+    map: texture,
+    roughness: 0.95,
+    metalness: 0,
+    transparent: true,
+  })
+
+  const rug = new THREE.Mesh(new THREE.CircleGeometry(r, 48), mat)
+  rug.rotation.x = -Math.PI / 2
+  rug.position.y = 0.009
+  rug.receiveShadow = true
+  g.add(rug)
+
+  const edge = new THREE.Mesh(
+    new THREE.RingGeometry(r, r + 0.04, 48),
+    new THREE.MeshStandardMaterial({
+      color: edgeColor,
+      roughness: 1,
+      metalness: 0,
+      side: THREE.DoubleSide,
+    }),
+  )
+  edge.rotation.x = -Math.PI / 2
+  edge.position.y = 0.005
+  edge.receiveShadow = true
+  g.add(edge)
+
+  return g
+}
+
 /**
- * Dining rug + lounge rug under the sectional.
+ * Dining rug + lounge rug under the sectional + round listening rug by the vinyl.
  */
 export function createRug() {
   const group = new THREE.Group()
@@ -119,6 +205,16 @@ export function createRug() {
   lounge.position.set(-2.4, 0, (loungeFront + loungeBack) / 2)
   lounge.rotation.y = 0
   group.add(lounge)
+
+  // Round rug under the listening chair + side table (facing the vinyl credenza)
+  const listening = makeRoundRugMesh(
+    1.85,
+    createRoundRugTexture(),
+    0x3a2c20,
+  )
+  listening.name = 'listeningRug'
+  listening.position.set(-2.35, 0, -2.85)
+  group.add(listening)
 
   return group
 }

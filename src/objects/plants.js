@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import { SVGLoader } from 'three/addons/loaders/SVGLoader.js'
+import { WALL_POS } from './roomConstants.js'
 
 const geoCache = new Map()
 
@@ -402,6 +403,8 @@ function createSnakePlant({
   leafCount = 7,
   potScale = 1,
   height = 0.95,
+  fanCenter = null,
+  fanSpan = Math.PI * 0.9,
 } = {}) {
   const plant = new THREE.Group()
   plant.name = 'snakePlant'
@@ -429,8 +432,11 @@ function createSnakePlant({
   const soilY = pot.userData.soilY
 
   for (let i = 0; i < leafCount; i++) {
-    const t = i / leafCount
-    const angle = t * Math.PI * 2 + 0.2
+    const t = i / Math.max(leafCount - 1, 1)
+    const angle =
+      fanCenter != null
+        ? fanCenter - fanSpan * 0.5 + t * fanSpan
+        : t * Math.PI * 2 + 0.2
     const lean = 0.08 + (i % 3) * 0.04
     const leafH = height * (0.7 + (i % 4) * 0.1)
     const mat = i % 2 === 0 ? green : greenAlt
@@ -452,7 +458,7 @@ function createSnakePlant({
     // local +Z → radial out, so yellow (−Z) always faces inward
     shoot.rotation.y = Math.PI / 2 - angle
     shoot.rotation.x = lean
-    shoot.rotation.z = (i % 2 === 0 ? -0.05 : 0.05)
+    shoot.rotation.z = i % 2 === 0 ? -0.05 : 0.05
     foliage.add(shoot)
   }
 
@@ -798,6 +804,8 @@ function createBirdOfParadise({
   leafCount = 5,
   potScale = 1.2,
   flowerCount = 2,
+  fanCenter = null,
+  fanSpan = Math.PI * 0.85,
 } = {}) {
   const plant = new THREE.Group()
   plant.name = 'birdOfParadise'
@@ -829,19 +837,26 @@ function createBirdOfParadise({
       },
     )
 
-    const angle = (i / leafCount) * Math.PI * 2 + 0.3
+    const angle =
+      fanCenter != null
+        ? fanCenter - fanSpan * 0.5 + t * fanSpan
+        : (i / leafCount) * Math.PI * 2 + 0.3
     const lean = 0.35 + t * 0.2
     shoot.position.set(Math.cos(angle) * 0.06, soilY, Math.sin(angle) * 0.06)
     shootDir.set(Math.cos(angle) * Math.sin(lean), Math.cos(lean), Math.sin(angle) * Math.sin(lean))
     shoot.quaternion.setFromUnitVectors(yAxis, shootDir)
-    shoot.rotateY((i - leafCount / 2) * 0.15)
+    shoot.rotateY((i - leafCount / 2) * 0.12)
     foliage.add(shoot)
   }
 
-  // Blooms rise above the leaf fan (real scapes overtop the foliage)
+  // Blooms rise above the leaf fan — same room-facing arc when fanned
   for (let i = 0; i < flowerCount; i++) {
     const flower = createBirdFlower(0.9 + i * 0.08)
-    const angle = 0.9 + i * 1.55
+    const t = (i + 0.5) / Math.max(flowerCount, 1)
+    const angle =
+      fanCenter != null
+        ? fanCenter - fanSpan * 0.25 + t * fanSpan * 0.5
+        : 0.9 + i * 1.55
     const lean = 0.08 + i * 0.04
     flower.position.set(
       Math.cos(angle) * 0.03,
@@ -854,8 +869,7 @@ function createBirdOfParadise({
       Math.sin(angle) * Math.sin(lean),
     )
     flower.quaternion.setFromUnitVectors(yAxis, shootDir)
-    // Present the beak silhouette in profile
-    flower.rotateY(i * 1.1 + 0.6)
+    flower.rotateY(fanCenter != null ? angle : i * 1.1 + 0.6)
     foliage.add(flower)
   }
 
@@ -1043,17 +1057,24 @@ export function createPlants() {
   const group = new THREE.Group()
   group.name = 'plants'
 
-  // Back-right corner (+X / −Z) — L along the walls, inset so foliage clears WALL_POS≈4.48
+  // Back-right corner (+X / −Z) — pots tight to the walls, foliage fanned into the room
   //   bird ——— monstera
   //                |
   //              snake
+  const potClear = 0.36 // pot radius ≈0.32 at scale 1.15
+  const wallX = WALL_POS - potClear
+  const wallZ = -(WALL_POS - potClear)
+  // Into-room fan centers: −X = π, +Z = π/2, corner diagonal = 3π/4
+  const fanFromBackWall = Math.PI * 0.5 // +Z
+  const fanFromRightWall = Math.PI // −X
+
   const monstera = createMonstera({
     potColor: 0xc4683a,
     height: 1.55,
     leafCount: 6,
     potScale: 1.15,
   })
-  monstera.position.set(3.05, 0, -3.05)
+  monstera.position.set(wallX - 0.22, 0, wallZ + 0.22)
   monstera.rotation.y = Math.PI * 0.75 // open toward room (−X / +Z)
   group.add(monstera)
 
@@ -1061,9 +1082,10 @@ export function createPlants() {
     potColor: 0xb85c38,
     leafCount: 4,
     potScale: 1.15,
+    fanCenter: fanFromBackWall,
+    fanSpan: Math.PI * 0.75,
   })
-  bird.position.set(1.9, 0, -3.05)
-  bird.rotation.y = Math.PI * 0.15 // blooms face into the room
+  bird.position.set(wallX - 1.35, 0, wallZ)
   group.add(bird)
 
   const snake = createSnakePlant({
@@ -1071,9 +1093,10 @@ export function createPlants() {
     leafCount: 6,
     potScale: 0.95,
     height: 1.05,
+    fanCenter: fanFromRightWall,
+    fanSpan: Math.PI * 0.85,
   })
-  snake.position.set(3.05, 0, -1.9)
-  snake.rotation.y = -Math.PI * 0.35
+  snake.position.set(wallX, 0, wallZ + 1.35)
   group.add(snake)
 
   // On the desk surface
@@ -1094,7 +1117,7 @@ export function createPlants() {
     leafCount: 4,
     potScale: 0.75,
   })
-  stereoMonstera.position.set(-3.15, 0, -2.15)
+  stereoMonstera.position.set(-(WALL_POS - 0.32), 0, -2.15)
   stereoMonstera.rotation.y = 0.85 // lean into the room (+X)
   group.add(stereoMonstera)
 

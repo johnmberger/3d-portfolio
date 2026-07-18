@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { WALL_POS } from './roomConstants.js'
 
 function markInteractive(mesh) {
   mesh.userData.interactive = 'turntable'
@@ -114,6 +115,7 @@ function createCabinet() {
 
   cabinet.userData.topY = h + 0.1 + 0.028
   cabinet.userData.width = w
+  cabinet.userData.depth = d
   return cabinet
 }
 
@@ -500,8 +502,11 @@ export function createTurntable() {
   upright.rotation.x = 0
   group.add(upright)
 
-  // Against the back wall, left of the window — vinyl faces into the room
-  group.position.set(-2.85, 0, -3.45)
+  // Flush to the back wall (−Z), left of the window — vinyl faces into the room
+  const cabD = cabinet.userData.depth
+  const topOverhang = 0.04 // top slab is deeper than the body
+  const wallGap = 0.01 // hairline clearance to avoid z-fighting
+  group.position.set(-2.85, 0, -(WALL_POS - wallGap) + (cabD + topOverhang) / 2)
   group.rotation.y = 0
 
   // Whole unit is a hotspot: credenza, deck, lids, and records

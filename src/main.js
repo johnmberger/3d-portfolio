@@ -168,8 +168,9 @@ const bathroom = createBathroom()
 const creditsPlaque = createCreditsPlaque()
 const couch = createCouch()
 const listeningChair = createArmchair({
-  position: [-0.85, 0, -1.55],
-  rotationY: 2.45 + Math.PI / 2,
+  // On the room-side edge of the listening rug, facing the vinyl
+  position: [-2.2, 0, -2.05],
+  rotationY: Math.PI + 0.35,
   fabricColor: 0xa89880,
   fabricDeepColor: 0x96866e,
   pillowColor: 0x8a8e92,

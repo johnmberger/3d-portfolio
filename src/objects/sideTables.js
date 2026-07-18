@@ -190,8 +190,8 @@ export function createSideTables() {
   chaise.position.set(-0.95, 0, 1.45)
   group.add(chaise)
 
-  // Right of the listening chair (facing turntable), offset along the chair's right
-  // Chair at (-0.85, -1.55), yaw ≈ 4.02 → local +X ≈ (-0.65, 0.76)
+  // Left of the listening chair — clear of the arm (chair half-width ≈0.45 + table r 0.2)
+  // Chair at (-2.2, -2.05), yaw = π+0.35 → local −X ≈ (0.94, -0.34)
   const listening = createSideTable({
     style: 'round',
     radius: 0.2,
@@ -199,7 +199,7 @@ export function createSideTables() {
     woodColor: 0x6b5340,
     prop: 'lamp',
   })
-  listening.position.set(-1.45, 0, -0.85)
+  listening.position.set(-1.48, 0, -2.32)
   group.add(listening)
 
   return group

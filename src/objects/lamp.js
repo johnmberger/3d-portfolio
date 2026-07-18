@@ -128,7 +128,7 @@ export function createFloorLamp({
   return group
 }
 
-export function updateFloorLamp(lamp) {
+export function updateFloorLamp(lamp, { night = false } = {}) {
   const light = lamp.userData.lampLight ?? lamp.getObjectByName('lampLight')
   const bulb = lamp.userData.lampBulb ?? lamp.getObjectByName('lampBulb')
   const shade = lamp.userData.lampShade ?? lamp.getObjectByName('lampShade')
@@ -136,7 +136,7 @@ export function updateFloorLamp(lamp) {
   lamp.userData.lampBulb = bulb
   lamp.userData.lampShade = shade
 
-  if (light) light.intensity = 0.55
-  if (bulb?.material) bulb.material.emissiveIntensity = 0.6
-  if (shade?.material) shade.material.emissiveIntensity = 0.2
+  if (light) light.intensity = night ? 1.85 : 0.55
+  if (bulb?.material) bulb.material.emissiveIntensity = night ? 1.8 : 0.6
+  if (shade?.material) shade.material.emissiveIntensity = night ? 0.7 : 0.2
 }

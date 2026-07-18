@@ -103,16 +103,26 @@ export function createDog() {
         model.traverse((child) => {
           if (!child.isMesh) return
           child.castShadow = true
-          child.receiveShadow = false
+          child.receiveShadow = true
           child.userData.interactive = 'dog'
           if (child.material) {
-            const mats = Array.isArray(child.material)
+            const srcMats = Array.isArray(child.material)
               ? child.material
               : [child.material]
-            for (const m of mats) {
-              if (m.map) m.map.colorSpace = THREE.SRGBColorSpace
-              m.side = THREE.FrontSide
-            }
+            const lit = srcMats.map((src) => {
+              // Sketchfab export is KHR_materials_unlit — convert so night lighting shades it
+              const mat = new THREE.MeshStandardMaterial({
+                map: src.map ?? null,
+                color: src.color?.clone?.() ?? new THREE.Color(0xffffff),
+                roughness: 0.85,
+                metalness: 0.02,
+                side: THREE.FrontSide,
+              })
+              if (mat.map) mat.map.colorSpace = THREE.SRGBColorSpace
+              src.dispose?.()
+              return mat
+            })
+            child.material = lit.length === 1 ? lit[0] : lit
           }
         })
 

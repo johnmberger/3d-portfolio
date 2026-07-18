@@ -9,6 +9,7 @@ import { createMonitor, updateMonitor } from './objects/monitor.js'
 import { createDiningTable } from './objects/dining.js'
 import { createTurntable, updateTurntable } from './objects/turntable.js'
 import { createFloorLamp, updateFloorLamp } from './objects/lamp.js'
+import { createLightSwitch, updateLightSwitch } from './objects/lightSwitch.js'
 import { createRug } from './objects/rug.js'
 import { createDog } from './objects/dog.js'
 import { createWallArt } from './objects/wallArt.js'
@@ -24,6 +25,7 @@ import { createWallInstruments } from './objects/guitar.js'
 import { WALL_POS } from './objects/roomConstants.js'
 import { createCameraRig } from './interaction/cameraRig.js'
 import { createCameraBounds } from './interaction/cameraBounds.js'
+import { createTimeOfDay } from './interaction/timeOfDay.js'
 import { createHoverHighlight } from './interaction/hoverHighlight.js'
 import {
   createCSS3DRenderer,
@@ -161,6 +163,7 @@ const lamp = createFloorLamp({
   rotationY: -Math.PI / 2,
   name: 'loungeLamp',
 })
+const lightSwitch = createLightSwitch()
 const rug = createRug()
 const { group: dog, ready: dogReady } = createDog()
 const wallArt = createWallArt()
@@ -190,6 +193,7 @@ scene.add(
   dining,
   turntable,
   lamp,
+  lightSwitch,
   rug,
   dog,
   wallArt,
@@ -203,6 +207,17 @@ scene.add(
   roundCoffee,
   instruments,
 )
+
+const timeOfDay = createTimeOfDay({
+  scene,
+  renderer,
+  ambient,
+  sun,
+  fill,
+  windowGlow,
+  windowRim,
+  room,
+})
 
 loading.setProgress(0.65, 'Warming the lights…')
 Promise.allSettled([dogReady, diningReady, bikeReady, instrumentsReady]).then(() => {
@@ -223,6 +238,7 @@ const focusHelper = createFocusHelper(app)
 const focusClose = createFocusClose(exitBtn)
 const rig = createCameraRig(camera, controls)
 const cameraBounds = createCameraBounds(camera, controls)
+
 const monitorScreen = monitor.getObjectByName('screen')
 const earwormsScreen = turntable.getObjectByName('screen')
 const bathroomScreen = bathroom.getObjectByName('screen')
@@ -244,6 +260,7 @@ const interactiveRoots = {
   about: dining,
   photo: photoShelf,
   dog,
+  lightSwitch,
 }
 let activeFocus = null
 let prevMode = 'explore'
@@ -420,7 +437,7 @@ function pickInteractive(clientX, clientY) {
   raycaster.setFromCamera(pointer, camera)
 
   const hits = raycaster.intersectObjects(
-    [monitor, turntable, bathroom, creditsPlaque, dining, photoShelf, dog],
+    [monitor, turntable, bathroom, creditsPlaque, dining, photoShelf, dog, lightSwitch],
     true,
   )
   for (const hit of hits) {
@@ -432,7 +449,8 @@ function pickInteractive(clientX, clientY) {
       kind === 'credits' ||
       kind === 'about' ||
       kind === 'photo' ||
-      kind === 'dog'
+      kind === 'dog' ||
+      kind === 'lightSwitch'
     ) {
       return kind
     }
@@ -477,6 +495,12 @@ canvas.addEventListener('pointerdown', (event) => {
   } else if (kind === 'dog') {
     event.preventDefault()
     openDog()
+  } else if (kind === 'lightSwitch') {
+    event.preventDefault()
+    if (FREE_CAMERA || rig.isBusy || rig.isFocused) return
+    timeOfDay.toggle()
+    updateLightSwitch(lightSwitch, { night: timeOfDay.isNight })
+    setHint(timeOfDay.isNight ? 'Lights down…' : 'Sunset mode…')
   }
 })
 
@@ -502,7 +526,7 @@ function onResize() {
 window.addEventListener('resize', onResize)
 
 setHint(EXPLORE_HINT)
-updateFloorLamp(lamp)
+updateFloorLamp(lamp, { night: false })
 
 function tick(timestamp) {
   timer.update(timestamp)
@@ -512,6 +536,9 @@ function tick(timestamp) {
   updatePlants(plants, elapsed)
   updateCandle(roundCoffee, elapsed, delta)
   updateWindowParallax(room, camera)
+  timeOfDay.update(delta)
+  updateFloorLamp(lamp, { night: timeOfDay.isNight })
+  updateLightSwitch(lightSwitch, { night: timeOfDay.isNight })
   const mode = rig.update(delta)
   if (mode !== prevMode) {
     if (mode === 'focused') {

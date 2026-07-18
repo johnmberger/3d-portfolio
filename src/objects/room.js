@@ -680,6 +680,7 @@ function createSideWindow(wallMat, trimMat) {
   )
   sky.rotation.y = -Math.PI / 2
   sky.position.x = wallX + 3.2
+  sky.name = 'sunsetSky'
   addParallaxLayer(sky, {
     factorY: 0.015,
     factorZ: 0.025,

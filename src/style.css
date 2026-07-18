@@ -337,6 +337,8 @@ body.is-app-ready #app {
 
 /* —— Loading screen —— */
 
+/* —— Loading screen —— */
+
 /* —— Loading screen ——
    Layout/visuals must match the critical <style> in index.html.
    No entrance animations here — they would restart when this file loads and flash. */

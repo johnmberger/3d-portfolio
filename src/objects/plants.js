@@ -1493,32 +1493,46 @@ function createHangingPlanter({
   foliage.position.y = potY + 0.05
 
   const rimR = 0.1
+  const trailSegs = Math.max(5, Math.round(4 + trailLength * 5))
   for (let i = 0; i < 8; i++) {
-    const a = (i / 8) * Math.PI * 2 + 0.18
+    const a0 = (i / 8) * Math.PI * 2 + 0.18
     const trail = new THREE.Group()
-    const segments = 4 + (i % 3)
+    const segments = trailSegs + (i % 3)
     const side = i % 2 === 0 ? 1 : -1
+    // Each vine curls a different way as it drops
+    const swirl = side * (0.55 + (i % 3) * 0.25)
+    const flare = 0.06 + (i % 4) * 0.025
+    const hangScale = 0.85 + (i % 3) * 0.06
+
     for (let s = 0; s < segments; s++) {
       const t = s / Math.max(segments - 1, 1)
-      // Inside → over rim → hang outside (never through the pot wall)
-      const radius = rimR * (0.55 + t * 0.55) + t * t * 0.08
-      const y =
-        0.03 * (1 - t) +
-        Math.sin(Math.min(t, 1) * Math.PI) * 0.02 -
-        t * trailLength * (0.85 + (i % 3) * 0.06)
+      // Ease out of the pot, then spiral / sag as it trails
+      const overRim = Math.min(1, t * 1.8)
+      const hangT = Math.max(0, (t - 0.2) / 0.8)
+      const angle = a0 + swirl * hangT * hangT * 1.35
+      const radius =
+        rimR * (0.5 + overRim * 0.55) +
+        hangT * hangT * flare * trailLength +
+        Math.sin(hangT * Math.PI * 1.6 + i) * 0.04 * hangT
 
-      const leafScale = 0.085 + (1 - t) * 0.02 + (s % 2) * 0.015
+      const y =
+        0.04 * (1 - overRim) +
+        Math.sin(overRim * Math.PI) * 0.025 -
+        // Soft sag curve (not linear drop)
+        (1 - Math.cos(hangT * Math.PI * 0.5)) * trailLength * hangScale
+
+      const leafScale = 0.08 + (1 - t) * 0.025 + (s % 2) * 0.012
       const leaf = new THREE.Mesh(
         createPothosLeafGeometry(),
         i % 2 === 0 ? leafMat : leafMatAlt,
       )
       leaf.scale.setScalar(leafScale)
-      leaf.position.set(Math.cos(a) * radius, y, Math.sin(a) * radius)
-      // Blade face-out, tip sideways (not dangling tip-down)
+      leaf.position.set(Math.cos(angle) * radius, y, Math.sin(angle) * radius)
+      // Leaves tumble along the curl — not locked to a radial pole
       leaf.rotation.order = 'YXZ'
-      leaf.rotation.y = a
-      leaf.rotation.x = 0.25 + t * 0.2
-      leaf.rotation.z = side * (Math.PI / 2 - 0.15) + (t - 0.5) * 0.2
+      leaf.rotation.y = angle + side * 0.35 + hangT * swirl * 0.4
+      leaf.rotation.x = 0.2 + hangT * 0.55 + Math.sin(t * 4 + i) * 0.15
+      leaf.rotation.z = side * (Math.PI / 2 - 0.2 - hangT * 0.35) + Math.sin(t * 3 + i * 0.7) * 0.25
       leaf.castShadow = false
       trail.add(leaf)
     }
@@ -1664,10 +1678,10 @@ export function createPlants() {
     potColor: 0xb85c38,
     leafColor: 0x4a6b3c,
     leafColorAlt: 0x3a5a32,
-    trailLength: 0.55,
+    trailLength: 1.45,
     cordLength: 0.55,
   })
-  // Front-left corner (−X / +Z) — ceiling-mounted
+  // Front-left corner (−X / +Z) — TV corner, long trailing vines
   hangC.position.set(-(WALL_POS - cornerInset), ceilingY, WALL_POS - cornerInset)
   hangC.rotation.y = 1.1
   group.add(hangC)

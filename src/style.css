@@ -40,6 +40,20 @@ body.is-app-ready #app {
   width: 100%;
   height: 100%;
   touch-action: none;
+  cursor: grab;
+}
+
+body.is-pointer #webgl,
+body.is-pointer .css3d-layer {
+  cursor: pointer;
+}
+
+body.is-dragging #webgl {
+  cursor: grabbing;
+}
+
+body.is-focused #webgl {
+  cursor: default;
 }
 
 .css3d-layer {

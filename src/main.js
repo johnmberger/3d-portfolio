@@ -283,6 +283,10 @@ function setPointer(on) {
   document.body.classList.toggle('is-pointer', on)
 }
 
+function setDragging(on) {
+  document.body.classList.toggle('is-dragging', on)
+}
+
 function setPortfolioInteractive(on) {
   portfolioUi.element.classList.toggle('is-interactive', on)
   portfolioUi.element.style.pointerEvents = on ? 'auto' : 'none'
@@ -300,9 +304,14 @@ function setPoopyInteractive(on) {
 
 function setFocusedUi(on) {
   hud.classList.toggle('is-dimmed', on)
+  document.body.classList.toggle('is-focused', on)
   if (!on) focusClose.hide()
   if (hudActions) hudActions.style.opacity = on ? '0' : '1'
   if (hudActions) hudActions.style.pointerEvents = on ? 'none' : 'auto'
+  if (on) {
+    setPointer(false)
+    setDragging(false)
+  }
 }
 
 function openPortfolio() {
@@ -514,6 +523,7 @@ canvas.addEventListener('pointerdown', (event) => {
   if (event.button !== 0) return
   if (rig.isBusy || rig.isFocused) return
   const kind = pickInteractive(event.clientX, event.clientY)
+  if (!kind) setDragging(true)
   if (kind === 'monitor') {
     event.preventDefault()
     openPortfolio()
@@ -546,6 +556,9 @@ canvas.addEventListener('pointerdown', (event) => {
     setHint(timeOfDay.isNight ? 'Lights down…' : 'Sunset mode…')
   }
 })
+
+window.addEventListener('pointerup', () => setDragging(false))
+window.addEventListener('pointercancel', () => setDragging(false))
 
 exitBtn?.addEventListener('click', () => closeFocus())
 

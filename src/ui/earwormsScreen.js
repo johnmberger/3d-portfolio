@@ -4,7 +4,8 @@ import { CSS3DObject } from 'three/addons/renderers/CSS3DRenderer.js'
 const EARWORMS_URL = 'https://earworms.johnberger.dev'
 export { EARWORMS_URL }
 const SCREEN_PX = 800
-const WORLD_SIZE = 0.4
+/** Slightly inset from the sleeve so the WebGL rim (and its shadows) stay visible. */
+const WORLD_SIZE = 0.376
 /** Wait for the room to settle before fetching Earworms. */
 const PRELOAD_DELAY_MS = 1800
 
@@ -97,7 +98,7 @@ export function createEarwormsScreen(turntable) {
     preload,
     show,
     hide,
-    screenSize: { width: WORLD_SIZE, height: WORLD_SIZE, fill: 0.7 },
+    screenSize: { width: 0.4, height: 0.4, fill: 0.7 },
   }
 }
 

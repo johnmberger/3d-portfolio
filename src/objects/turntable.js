@@ -50,6 +50,7 @@ function createCabinet() {
   )
   topSlab.position.y = h + 0.1 + 0.014
   topSlab.castShadow = true
+  topSlab.receiveShadow = true
   cabinet.add(topSlab)
 
   // Four door panels across the front
@@ -302,6 +303,7 @@ function createUprightRecord() {
     new THREE.Mesh(new THREE.BoxGeometry(sleeveW, sleeveH, sleeveD), sleeveMat),
   )
   sleeve.castShadow = true
+  sleeve.receiveShadow = true
   record.add(sleeve)
 
   const disc = markInteractive(
@@ -312,6 +314,7 @@ function createUprightRecord() {
   )
   disc.rotation.x = Math.PI / 2
   disc.position.set(0.06, 0, -0.01)
+  disc.castShadow = true
   record.add(disc)
 
   const artMap = createSleeveArtTexture()
@@ -324,11 +327,28 @@ function createUprightRecord() {
     metalness: 0,
   })
   const screen = markInteractive(
-    new THREE.Mesh(new THREE.PlaneGeometry(sleeveW, sleeveH), screenMat),
+    new THREE.Mesh(new THREE.PlaneGeometry(sleeveW * 0.94, sleeveH * 0.94), screenMat),
   )
   screen.position.set(0, 0, sleeveD / 2 + 0.002)
   screen.name = 'screen'
+  screen.castShadow = true
+  screen.receiveShadow = true
   record.add(screen)
+
+  // Soft contact shadow on the credenza under the upright sleeve
+  const contact = new THREE.Mesh(
+    new THREE.PlaneGeometry(sleeveW * 0.95, 0.09),
+    new THREE.MeshBasicMaterial({
+      color: 0x000000,
+      transparent: true,
+      opacity: 0.28,
+      depthWrite: false,
+    }),
+  )
+  contact.rotation.x = -Math.PI / 2
+  contact.position.set(0, -sleeveH / 2 - 0.002, 0.02)
+  contact.userData.skipHover = true
+  record.add(contact)
 
   const screenHit = markInteractive(
     new THREE.Mesh(

@@ -11,7 +11,7 @@ export const portfolio = {
   links: [
     { label: 'LinkedIn', href: 'https://www.linkedin.com/in/johnmberger/' },
     { label: 'GitHub', href: 'https://github.com/johnmberger' },
-    { label: 'Resume', href: RESUME_URL },
+    { label: 'Résumé', href: RESUME_URL },
   ],
   skills: [
     'TypeScript',

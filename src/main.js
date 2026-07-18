@@ -48,7 +48,11 @@ import { createLoadingScreen } from './ui/loadingScreen.js'
 
 RectAreaLightUniformsLib.init()
 
-const EXPLORE_HINT = 'Drag to look · Scroll to zoom'
+const isTouchExplore =
+  window.matchMedia('(max-width: 900px), (pointer: coarse)').matches
+const EXPLORE_HINT = isTouchExplore
+  ? 'Tap objects to look closer'
+  : 'Drag to look · Scroll to zoom'
 
 const loading = createLoadingScreen(document.body)
 loading.setProgress(0.15, 'Building the room…')
@@ -303,7 +307,7 @@ function openPortfolio() {
   const size = { width: 0.85, height: 0.48, fill: 0.78 }
   focusClose.show({ anchor: monitorScreen, width: size.width, height: size.height })
   rig.enterFocus(monitorScreen, size)
-  setHint('Reading the resume…')
+  setHint('Reading the résumé…')
 }
 
 function openEarworms() {
@@ -573,6 +577,12 @@ function tick(timestamp) {
   }
 
   const focusing = rig.isFocused || mode === 'toFocus'
+  if (isTouchExplore && !rig.isFocused && !rig.isBusy) {
+    const pulseIntensity = 0.1 + Math.sin(elapsed * 2.2) * 0.08
+    hoverHighlight.pulse(Object.values(interactiveRoots), pulseIntensity)
+  } else {
+    hoverHighlight.clearPulse()
+  }
   focusHelper.update(camera)
   focusClose.update(camera)
   updateMonitor(monitor, elapsed, {

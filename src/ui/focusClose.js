@@ -9,8 +9,13 @@ const _ndc = new THREE.Vector3()
 const EDGE_MARGIN = 12
 const GAP = 14
 
+function isMobileViewport() {
+  return window.matchMedia('(max-width: 900px), (pointer: coarse)').matches
+}
+
 /**
  * Fixed-DOM ✕ that floats beside a focused 3D screen (easy to hit when zoomed in).
+ * On mobile it parks in the top-right corner so it clears the bottom helper sheet.
  */
 export function createFocusClose(button) {
   let anchor = null
@@ -40,6 +45,15 @@ export function createFocusClose(button) {
 
   function update(camera) {
     if (!button || button.hidden || !anchor) return
+
+    if (isMobileViewport()) {
+      button.style.opacity = '1'
+      button.style.left = 'auto'
+      button.style.right = `${EDGE_MARGIN}px`
+      button.style.top = `max(${EDGE_MARGIN}px, env(safe-area-inset-top))`
+      button.style.transform = 'none'
+      return
+    }
 
     anchor.updateWorldMatrix(true, false)
     anchor.getWorldPosition(_center)

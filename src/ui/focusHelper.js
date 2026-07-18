@@ -9,8 +9,13 @@ const _ndc = new THREE.Vector3()
 const EDGE_MARGIN = 16
 const SIDE_GAP = 28
 
+function isMobileViewport() {
+  return window.matchMedia('(max-width: 900px), (pointer: coarse)').matches
+}
+
 /**
  * Floating bubble caption that sits beside a focused 3D screen.
+ * On mobile it docks to the bottom so it doesn't cover the view.
  */
 export function createFocusHelper(parent = document.getElementById('app')) {
   const el = document.createElement('aside')
@@ -133,6 +138,16 @@ export function createFocusHelper(parent = document.getElementById('app')) {
   function update(camera) {
     if (!anchor || el.hidden) return
 
+    if (isMobileViewport()) {
+      el.dataset.side = 'bottom'
+      el.style.opacity = '1'
+      el.style.left = ''
+      el.style.top = ''
+      el.style.right = ''
+      el.style.transform = ''
+      return
+    }
+
     anchor.updateWorldMatrix(true, false)
     anchor.getWorldPosition(_center)
     _right.set(1, 0, 0).transformDirection(anchor.matrixWorld).normalize()
@@ -161,14 +176,12 @@ export function createFocusHelper(parent = document.getElementById('app')) {
     let x
     let side
     if (placeRight) {
-      // left edge of bubble just past the screen's right edge
       x = right.x + SIDE_GAP
       x = Math.min(x, window.innerWidth - bubbleW - EDGE_MARGIN)
       x = Math.max(x, EDGE_MARGIN)
       side = 'right'
       el.style.transform = 'translate(0, -50%)'
     } else {
-      // with translate(-100%), `left` is the bubble's right edge
       x = left.x - SIDE_GAP
       x = Math.max(x, bubbleW + EDGE_MARGIN)
       x = Math.min(x, window.innerWidth - EDGE_MARGIN)
@@ -185,6 +198,7 @@ export function createFocusHelper(parent = document.getElementById('app')) {
     el.dataset.side = side
     el.style.left = `${x}px`
     el.style.top = `${y}px`
+    el.style.bottom = ''
   }
 
   return { element: el, show, hide, update }

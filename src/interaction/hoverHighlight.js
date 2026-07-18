@@ -1,11 +1,13 @@
 /**
- * Soft emissive lift on an interactive root while hovered.
+ * Soft emissive lift on interactive roots (hover + mobile pulse).
  * Saves/restores each material's emissive so focus/exit cleans up cleanly.
  */
 export function createHoverHighlight({ color = 0x8fbf9a, boost = 0.28 } = {}) {
   let activeRoot = null
+  /** @type {Set<object>} */
+  const pulsed = new Set()
 
-  function apply(root, on) {
+  function apply(root, on, intensityBoost = boost) {
     if (!root) return
     root.traverse((child) => {
       if (!child.isMesh || !child.material) return
@@ -22,7 +24,7 @@ export function createHoverHighlight({ color = 0x8fbf9a, boost = 0.28 } = {}) {
           }
           const base = m.userData._hoverSaved.intensity
           m.emissive.setHex(color)
-          m.emissiveIntensity = Math.min(0.85, base + boost)
+          m.emissiveIntensity = Math.min(0.85, base + intensityBoost)
           m.needsUpdate = true
         } else if (m.userData._hoverSaved) {
           m.emissive.setHex(m.userData._hoverSaved.color)
@@ -38,12 +40,42 @@ export function createHoverHighlight({ color = 0x8fbf9a, boost = 0.28 } = {}) {
     if (activeRoot === root) return
     if (activeRoot) apply(activeRoot, false)
     activeRoot = root
-    if (activeRoot) apply(activeRoot, true)
+    if (activeRoot) {
+      pulsed.delete(activeRoot)
+      apply(activeRoot, true)
+    }
   }
 
   function clear() {
     set(null)
+    clearPulse()
   }
 
-  return { set, clear }
+  /**
+   * Soft standing cue for touch (no hover). Does not stomp an active hover root.
+   * @param {Iterable<object>} roots
+   * @param {number} intensity
+   */
+  function pulse(roots, intensity) {
+    const next = new Set()
+    for (const root of roots) {
+      if (!root || root === activeRoot) continue
+      next.add(root)
+      apply(root, true, intensity)
+    }
+    for (const root of pulsed) {
+      if (!next.has(root) && root !== activeRoot) apply(root, false)
+    }
+    pulsed.clear()
+    for (const root of next) pulsed.add(root)
+  }
+
+  function clearPulse() {
+    for (const root of pulsed) {
+      if (root !== activeRoot) apply(root, false)
+    }
+    pulsed.clear()
+  }
+
+  return { set, clear, pulse, clearPulse }
 }

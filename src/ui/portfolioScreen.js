@@ -23,12 +23,12 @@ export function createPortfolioScreen(monitor) {
     <div class="folio-frame">
       <div class="folio-viewport">
         <div class="folio-placeholder">
-          <p class="folio-placeholder__kicker">Resume</p>
+          <p class="folio-placeholder__kicker">Résumé</p>
           <p class="folio-placeholder__copy">Loading John Berger…</p>
         </div>
         <iframe
           class="folio-iframe"
-          title="John Berger — Resume"
+          title="John Berger — Résumé"
           referrerpolicy="no-referrer-when-downgrade"
         ></iframe>
       </div>
@@ -77,7 +77,7 @@ export function createPortfolioScreen(monitor) {
     if (!warmIframe) {
       warmIframe = document.createElement('iframe')
       warmIframe.src = RESUME_URL
-      warmIframe.title = 'Resume preload'
+      warmIframe.title = 'Résumé preload'
       warmIframe.setAttribute('aria-hidden', 'true')
       warmIframe.tabIndex = -1
       Object.assign(warmIframe.style, {

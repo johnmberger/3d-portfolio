@@ -141,6 +141,21 @@ body.is-app-ready #app {
   border-bottom: 0;
 }
 
+.focus-helper[data-side="bottom"] {
+  left: 50%;
+  right: auto;
+  top: auto;
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  max-width: min(420px, calc(100vw - 2rem));
+  width: calc(100vw - 2rem);
+  pointer-events: auto;
+}
+
+.focus-helper[data-side="bottom"]::after {
+  display: none;
+}
+
 .focus-helper__title {
   margin: 0;
   font-family: "Fraunces", Georgia, serif;

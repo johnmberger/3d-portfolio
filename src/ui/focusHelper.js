@@ -19,27 +19,92 @@ export function createFocusHelper(parent = document.getElementById('app')) {
   el.setAttribute('aria-live', 'polite')
   el.innerHTML = `
     <p class="focus-helper__title"></p>
+    <p class="focus-helper__role" hidden></p>
     <p class="focus-helper__blurb"></p>
+    <ul class="focus-helper__facts" hidden></ul>
+    <div class="focus-helper__links" hidden></div>
     <a class="focus-helper__link" href="#" target="_blank" rel="noreferrer">Open site ↗</a>
   `
   parent.appendChild(el)
 
   const titleEl = el.querySelector('.focus-helper__title')
+  const roleEl = el.querySelector('.focus-helper__role')
   const blurbEl = el.querySelector('.focus-helper__blurb')
+  const factsEl = el.querySelector('.focus-helper__facts')
+  const linksEl = el.querySelector('.focus-helper__links')
   const linkEl = el.querySelector('.focus-helper__link')
   let anchor = null
   let screenW = 0.4
 
-  function show({ title, blurb, href, anchor: nextAnchor, width = 0.4 }) {
+  function show({
+    title,
+    role,
+    blurb,
+    facts,
+    href,
+    links,
+    anchor: nextAnchor,
+    width = 0.4,
+  }) {
     titleEl.textContent = title
     blurbEl.textContent = blurb
-    if (href) {
-      linkEl.href = href
-      linkEl.hidden = false
+
+    if (role) {
+      roleEl.textContent = role
+      roleEl.hidden = false
     } else {
-      linkEl.removeAttribute('href')
-      linkEl.hidden = true
+      roleEl.textContent = ''
+      roleEl.hidden = true
     }
+
+    factsEl.replaceChildren()
+    if (facts?.length) {
+      for (const fact of facts) {
+        const li = document.createElement('li')
+        li.className = 'focus-helper__fact'
+        li.innerHTML = `<span class="focus-helper__fact-label">${fact.label}</span><span class="focus-helper__fact-value">${fact.value}</span>`
+        factsEl.appendChild(li)
+      }
+      factsEl.hidden = false
+    } else {
+      factsEl.hidden = true
+    }
+
+    linksEl.replaceChildren()
+    if (links?.length) {
+      for (const item of links) {
+        const a = document.createElement('a')
+        a.className = 'focus-helper__credit'
+        a.href = item.href
+        if (item.href.startsWith('mailto:')) {
+          a.removeAttribute('target')
+          a.removeAttribute('rel')
+        } else {
+          a.target = '_blank'
+          a.rel = 'noreferrer'
+        }
+        const meta = [item.by, item.license].filter(Boolean).join(' · ')
+        a.innerHTML = `<span class="focus-helper__credit-title">${item.title}</span>${
+          meta
+            ? `<span class="focus-helper__credit-meta">${meta}</span>`
+            : ''
+        }`
+        linksEl.appendChild(a)
+      }
+      linksEl.hidden = false
+      linkEl.hidden = true
+      linkEl.removeAttribute('href')
+    } else {
+      linksEl.hidden = true
+      if (href) {
+        linkEl.href = href
+        linkEl.hidden = false
+      } else {
+        linkEl.removeAttribute('href')
+        linkEl.hidden = true
+      }
+    }
+
     anchor = nextAnchor
     screenW = width
     el.hidden = false

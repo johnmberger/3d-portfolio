@@ -1,6 +1,8 @@
 import * as THREE from 'three'
 import { WALL_POS } from './roomConstants.js'
 
+const PORTRAIT_URL = '/images/johnberger.jpg'
+
 function mat(color, props = {}) {
   return new THREE.MeshStandardMaterial({
     color,
@@ -187,6 +189,120 @@ function createFramedPrint({
   return piece
 }
 
+/** Soft emissive-ready mark for photo zoom hotspot. */
+function markPhoto(obj) {
+  obj.traverse((child) => {
+    if (child.isMesh) child.userData.interactive = 'photo'
+  })
+  return obj
+}
+
+/** Small oak ledge with a standing portrait frame (placeholder photo). */
+function createFloatingPhotoShelf() {
+  const shelf = new THREE.Group()
+  shelf.name = 'photoShelf'
+
+  const wood = mat(0x6e5340, { roughness: 0.62, metalness: 0.04 })
+  const woodDark = mat(0x4a382c, { roughness: 0.68 })
+  const frameMat = mat(0x2a2420, { roughness: 0.55, metalness: 0.08 })
+
+  const boardW = 0.32
+  const boardD = 0.11
+  const boardT = 0.022
+
+  const board = new THREE.Mesh(new THREE.BoxGeometry(boardW, boardT, boardD), wood)
+  board.position.set(0, 0, boardD / 2)
+  board.castShadow = true
+  board.receiveShadow = true
+  shelf.add(board)
+
+  // Slim underside lip against the wall
+  const lip = new THREE.Mesh(new THREE.BoxGeometry(boardW * 0.92, 0.028, 0.016), woodDark)
+  lip.position.set(0, -0.01, 0.01)
+  lip.castShadow = true
+  shelf.add(lip)
+
+  // Two small bracket stubs
+  for (const x of [-boardW * 0.32, boardW * 0.32]) {
+    const bracket = new THREE.Mesh(new THREE.BoxGeometry(0.018, 0.05, 0.055), woodDark)
+    bracket.position.set(x, -0.028, 0.028)
+    bracket.castShadow = true
+    shelf.add(bracket)
+  }
+
+  // Standing photo frame on the shelf — slightly wider than strict 3:4 so the portrait doesn’t read squeezed
+  const frame = new THREE.Group()
+  frame.name = 'photoFrame'
+  const fh = 0.17
+  const fw = fh * 0.82
+  const ft = 0.012
+  const frameDepth = 0.018
+
+  const outer = new THREE.Mesh(
+    new THREE.BoxGeometry(fw, fh, frameDepth),
+    frameMat,
+  )
+  outer.castShadow = true
+  frame.add(outer)
+
+  const matte = new THREE.Mesh(
+    new THREE.PlaneGeometry(fw - ft * 2, fh - ft * 2),
+    mat(0xf0e8dc, { roughness: 0.92, metalness: 0 }),
+  )
+  matte.position.z = frameDepth / 2 + 0.001
+  frame.add(matte)
+
+  const portraitMap = new THREE.TextureLoader().load(PORTRAIT_URL)
+  portraitMap.colorSpace = THREE.SRGBColorSpace
+  portraitMap.anisotropy = 4
+
+  const photo = new THREE.Mesh(
+    new THREE.PlaneGeometry(fw - ft * 2.8, fh - ft * 2.8),
+    new THREE.MeshStandardMaterial({
+      map: portraitMap,
+      roughness: 0.7,
+      metalness: 0,
+    }),
+  )
+  photo.position.z = frameDepth / 2 + 0.002
+  frame.add(photo)
+
+  // Kickstand so it reads as a standing frame
+  const stand = new THREE.Mesh(
+    new THREE.BoxGeometry(0.04, 0.01, 0.06),
+    frameMat,
+  )
+  stand.position.set(0, -fh / 2 + 0.008, -0.028)
+  stand.rotation.x = 0.35
+  frame.add(stand)
+
+  // Invisible focus target on the portrait face
+  const focus = new THREE.Mesh(
+    new THREE.PlaneGeometry(fw, fh),
+    new THREE.MeshBasicMaterial({ visible: false }),
+  )
+  focus.name = 'screen'
+  focus.position.z = frameDepth / 2 + 0.004
+  focus.userData.skipHover = true
+  focus.userData.interactive = 'photo'
+  frame.add(focus)
+
+  frame.position.set(0.02, boardT / 2 + fh / 2 - 0.004, boardD * 0.55)
+  frame.rotation.x = -0.06
+  shelf.add(frame)
+
+  markPhoto(shelf)
+  focus.name = 'screen'
+
+  shelf.userData.screenSize = {
+    width: fw,
+    height: fh,
+    fill: 0.72,
+  }
+
+  return shelf
+}
+
 /**
  * Framed prints — placements audited against TV, bike, vinyl corner instruments,
  * hanging plants, kitchenette, and the credits plaque.
@@ -222,6 +338,16 @@ export function createWallArt() {
       pos: [-wall, 1.95, 2.55],
       rotY: Math.PI / 2,
     },
+    {
+      paint: paintGeometry,
+      artW: 0.48,
+      artH: 0.62,
+      frameColor: 0x1a1816,
+      matteColor: 0xe8e2d8,
+      // Low in the gap between sunset (z≈0.85) and botanical (z≈1.85)
+      pos: [-wall, 1.42, 1.5],
+      rotY: Math.PI / 2,
+    },
 
     // Back wall (−Z) — only the right-of-window print remains.
     // Left-of-window geometry print moved off this wall (instruments live there now).
@@ -232,17 +358,6 @@ export function createWallArt() {
       frameColor: 0x6b5340,
       pos: [2.7, 2.15, -wall],
       rotY: 0,
-    },
-
-    // Front wall (+Z) — between TV (~−1.9) and entry door (~−0.06); was beside the bike
-    {
-      paint: paintGeometry,
-      artW: 0.48,
-      artH: 0.62,
-      frameColor: 0x1a1816,
-      matteColor: 0xe8e2d8,
-      pos: [-1.05, 2.25, wall],
-      rotY: Math.PI,
     },
 
     // Right wall (+X) — south of side window (winZ≈−0.35)
@@ -262,6 +377,12 @@ export function createWallArt() {
     print.rotation.y = spec.rotY
     group.add(print)
   }
+
+  // Floating shelf past the lines print — clear of botanical / geometry
+  const photoShelf = createFloatingPhotoShelf()
+  photoShelf.position.set(-wall, 1.18, 2.85)
+  photoShelf.rotation.y = Math.PI / 2
+  group.add(photoShelf)
 
   return group
 }

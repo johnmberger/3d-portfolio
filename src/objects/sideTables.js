@@ -88,17 +88,67 @@ function createSideTable({
     book.position.set(0.02, topY + 0.03, -0.02)
     book.rotation.y = 0.35
     group.add(book)
-  } else if (prop === 'mug') {
-    const mug = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.035, 0.03, 0.07, 12),
-      mat(0xe8ddd0, { roughness: 0.55 }),
+  } else if (prop === 'beer') {
+    const glassH = 0.095
+    const glassY = topY + glassH / 2 + 0.002
+    const glassMat = new THREE.MeshStandardMaterial({
+      color: 0xd8e8f0,
+      roughness: 0.12,
+      metalness: 0.05,
+      transparent: true,
+      opacity: 0.28,
+      depthWrite: false,
+    })
+    const glass = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.032, 0.026, glassH, 16, 1, true),
+      glassMat,
     )
-    mug.position.set(0.04, topY + 0.05, 0.02)
-    mug.castShadow = true
-    group.add(mug)
-    const handle = box(0.012, 0.035, 0.04, mat(0xe8ddd0, { roughness: 0.55 }))
-    handle.position.set(0.08, topY + 0.05, 0.02)
-    group.add(handle)
+    glass.position.set(0.03, glassY, 0.02)
+    glass.castShadow = true
+    group.add(glass)
+
+    // Solid bottom so the glass reads as a vessel
+    const bottom = new THREE.Mesh(
+      new THREE.CircleGeometry(0.026, 16),
+      new THREE.MeshStandardMaterial({
+        color: 0xc8d8e0,
+        roughness: 0.2,
+        metalness: 0.05,
+        transparent: true,
+        opacity: 0.45,
+      }),
+    )
+    bottom.rotation.x = -Math.PI / 2
+    bottom.position.set(0.03, topY + 0.003, 0.02)
+    group.add(bottom)
+
+    // Amber beer fill
+    const beerH = glassH * 0.72
+    const beer = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.028, 0.023, beerH, 16),
+      new THREE.MeshStandardMaterial({
+        color: 0xc47820,
+        roughness: 0.35,
+        metalness: 0.05,
+        transparent: true,
+        opacity: 0.88,
+      }),
+    )
+    beer.position.set(0.03, topY + beerH / 2 + 0.006, 0.02)
+    beer.castShadow = true
+    group.add(beer)
+
+    // Foam head
+    const foam = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.029, 0.028, 0.014, 16),
+      new THREE.MeshStandardMaterial({
+        color: 0xf5ead0,
+        roughness: 0.95,
+        metalness: 0,
+      }),
+    )
+    foam.position.set(0.03, topY + beerH + 0.012, 0.02)
+    group.add(foam)
   } else if (prop === 'lamp') {
     const ceramic = mat(0xd8d0c4, { roughness: 0.55 })
     const brass = mat(0xb8975a, { metalness: 0.7, roughness: 0.35 })
@@ -185,7 +235,7 @@ export function createSideTables() {
     depth: 0.38,
     topY: 0.46,
     woodColor: 0x5c4330,
-    prop: 'mug',
+    prop: 'beer',
   })
   chaise.position.set(-0.95, 0, 1.45)
   group.add(chaise)

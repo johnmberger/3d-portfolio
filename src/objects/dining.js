@@ -9,6 +9,189 @@ function mat(color, props = {}) {
   return new THREE.MeshStandardMaterial({ color, roughness: 0.7, metalness: 0, ...props })
 }
 
+function markAbout(obj) {
+  obj.traverse((child) => {
+    if (child.isMesh) child.userData.interactive = 'about'
+  })
+  return obj
+}
+
+/** Laminated diner menu face — playful About Me, not a resume dump. */
+function createBurgerMenuTexture() {
+  const w = 512
+  const h = 720
+  const canvas = document.createElement('canvas')
+  canvas.width = w
+  canvas.height = h
+  const ctx = canvas.getContext('2d')
+
+  // Cream paper
+  ctx.fillStyle = '#f3e6d0'
+  ctx.fillRect(0, 0, w, h)
+
+  // Soft grain
+  for (let i = 0; i < 2200; i++) {
+    const a = 0.03 + Math.random() * 0.05
+    ctx.fillStyle = Math.random() > 0.5 ? `rgba(90,50,20,${a})` : `rgba(255,255,240,${a})`
+    ctx.fillRect(Math.random() * w, Math.random() * h, 1.5, 1.5)
+  }
+
+  // Red diner border
+  ctx.strokeStyle = '#8b1e1a'
+  ctx.lineWidth = 14
+  ctx.strokeRect(18, 18, w - 36, h - 36)
+  ctx.strokeStyle = '#d4a24a'
+  ctx.lineWidth = 3
+  ctx.strokeRect(32, 32, w - 64, h - 64)
+
+  // Header band
+  ctx.fillStyle = '#8b1e1a'
+  ctx.fillRect(48, 48, w - 96, 118)
+
+  ctx.fillStyle = '#f3e6d0'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.font = '700 22px "Source Sans 3", system-ui, sans-serif'
+  ctx.fillText('EST. ATLANTA · OPEN LATE', w / 2, 78)
+
+  ctx.font = '700 52px "Fraunces", Georgia, serif'
+  ctx.fillText("BERGER'S", w / 2, 122)
+
+  // Tagline — not a job title
+  ctx.fillStyle = '#8b1e1a'
+  ctx.font = 'italic 700 22px "Fraunces", Georgia, serif'
+  ctx.fillText('Philosophy · Pixels · Fries', w / 2, 190)
+
+  ctx.fillStyle = '#5a4a3a'
+  ctx.font = '500 17px "Source Sans 3", system-ui, sans-serif'
+  ctx.fillText('Chef John · Table for one', w / 2, 218)
+
+  // Divider
+  ctx.strokeStyle = '#c4a06a'
+  ctx.lineWidth = 2
+  ctx.beginPath()
+  ctx.moveTo(70, 240)
+  ctx.lineTo(w - 70, 240)
+  ctx.stroke()
+
+  const wrapText = (text, x, y, maxWidth, lineHeight) => {
+    const words = text.split(' ')
+    let line = ''
+    let yy = y
+    for (const word of words) {
+      const test = line ? `${line} ${word}` : word
+      if (ctx.measureText(test).width > maxWidth && line) {
+        ctx.fillText(line, x, yy)
+        line = word
+        yy += lineHeight
+      } else {
+        line = test
+      }
+    }
+    if (line) ctx.fillText(line, x, yy)
+    return yy
+  }
+
+  const drawDish = (name, desc, y) => {
+    ctx.fillStyle = '#8b1e1a'
+    ctx.font = '700 19px "Source Sans 3", system-ui, sans-serif'
+    ctx.textAlign = 'left'
+    ctx.fillText(name.toUpperCase(), 72, y)
+
+    ctx.fillStyle = '#3a2e24'
+    ctx.font = '400 15px "Source Sans 3", system-ui, sans-serif'
+    return wrapText(desc, 72, y + 24, w - 144, 20) + 34
+  }
+
+  ctx.fillStyle = '#8b1e1a'
+  ctx.textAlign = 'center'
+  ctx.font = 'italic 700 22px "Fraunces", Georgia, serif'
+  ctx.fillText("Tonight's Menu", w / 2, 270)
+
+  let y = 304
+  y = drawDish('House Burger', 'Built in Atlanta. No substitutions.', y)
+  y = drawDish('Philosopher Fries', 'Vandy-seasoned. Overthinks the sauce.', y)
+  y = drawDish('Side of Vinyl', 'Always spinning.', y)
+  y = drawDish('House Plants', 'Overwatered with love. Still thriving.', y)
+  y = drawDish('Weekend Ride', 'Two wheels. Zero traffic reports.', y)
+  y = drawDish('Late Night Special', 'Ships features after midnight.', y)
+
+  // Bottom stamp — career lives on the desk monitor
+  ctx.fillStyle = '#6b1f1a'
+  ctx.textAlign = 'center'
+  ctx.font = '700 14px "Source Sans 3", system-ui, sans-serif'
+  ctx.fillText('★ RESUME SERVED AT THE DESK ★', w / 2, h - 48)
+
+  const tex = new THREE.CanvasTexture(canvas)
+  tex.colorSpace = THREE.SRGBColorSpace
+  tex.anisotropy = 8
+  return tex
+}
+
+/** Standing laminated burger-joint menu (About Me hotspot). */
+function createBurgerMenu() {
+  const menu = new THREE.Group()
+  menu.name = 'burgerMenu'
+
+  const menuW = 0.22
+  const menuH = 0.3
+  const menuD = 0.008
+  // Build around a bottom-edge pivot so leaning stays on the tabletop
+  const midY = menuH / 2
+
+  const coverMat = mat(0x8b1e1a, { roughness: 0.55 })
+  const pageMat = new THREE.MeshStandardMaterial({
+    map: createBurgerMenuTexture(),
+    roughness: 0.7,
+    metalness: 0,
+  })
+
+  // Back cover
+  const back = new THREE.Mesh(new THREE.BoxGeometry(menuW, menuH, menuD * 0.4), coverMat)
+  back.position.set(0, midY, -menuD * 0.3)
+  back.castShadow = true
+  menu.add(back)
+
+  // Front page with menu art
+  const page = new THREE.Mesh(new THREE.PlaneGeometry(menuW * 0.96, menuH * 0.96), pageMat)
+  page.position.set(0, midY, menuD * 0.5)
+  page.castShadow = true
+  menu.add(page)
+
+  // Slim spine edge
+  const spine = new THREE.Mesh(
+    new THREE.BoxGeometry(0.01, menuH, menuD),
+    mat(0x6b1f1a, { roughness: 0.5 }),
+  )
+  spine.position.set(-menuW / 2 + 0.005, midY, 0)
+  menu.add(spine)
+
+  // Invisible focus / hit target on the face
+  const focus = new THREE.Mesh(
+    new THREE.PlaneGeometry(menuW, menuH),
+    new THREE.MeshBasicMaterial({ visible: false }),
+  )
+  focus.name = 'screen'
+  focus.position.set(0, midY, menuD * 0.55)
+  focus.userData.skipHover = true
+  focus.userData.interactive = 'about'
+  menu.add(focus)
+
+  menu.userData.screenSize = {
+    width: menuW,
+    height: menuH,
+    // Close enough to read; still wide enough to keep the meal in frame
+    fill: 0.52,
+  }
+  menu.userData.menuH = menuH
+
+  markAbout(menu)
+  // Keep the invisible plane as the named screen after traverse
+  focus.name = 'screen'
+
+  return menu
+}
+
 function prepareFoodModel(scene, { targetHeight, uprightFromZ = false } = {}) {
   // Some Quaternius props are authored Z-up
   if (uprightFromZ) scene.rotation.x = Math.PI / 2
@@ -58,24 +241,17 @@ function loadFood(url, opts) {
 }
 
 function createPlate() {
-  const plateMat = mat(0xf2f0ea, { roughness: 0.45 })
   const plate = new THREE.Group()
 
+  // Single thin disc — stacked dish+well was z-fighting
   const dish = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.14, 0.12, 0.012, 24),
-    plateMat,
+    new THREE.CylinderGeometry(0.13, 0.125, 0.006, 32),
+    mat(0xf2f0ea, { roughness: 0.45 }),
   )
-  dish.position.y = 0.006
+  dish.position.y = 0.003
   dish.castShadow = true
   dish.receiveShadow = true
   plate.add(dish)
-
-  const well = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.1, 0.1, 0.004, 24),
-    mat(0xe8e4dc, { roughness: 0.5 }),
-  )
-  well.position.y = 0.01
-  plate.add(well)
 
   return plate
 }
@@ -130,79 +306,156 @@ function createBagLabelTexture(name) {
   return tex
 }
 
-/** Kraft takeout bag with a printed name on the front. */
-function createFastFoodBag(name = 'John Berger') {
+function crinklePaperGeometry(
+  geo,
+  amount = 0.0018,
+  { flareTop = 0, flatCenter = null } = {},
+) {
+  const pos = geo.attributes.position
+  // PlaneGeometry is centered; find y extent for optional top flare
+  let yMin = Infinity
+  let yMax = -Infinity
+  for (let i = 0; i < pos.count; i++) {
+    const y = pos.getY(i)
+    yMin = Math.min(yMin, y)
+    yMax = Math.max(yMax, y)
+  }
+  const ySpan = Math.max(yMax - yMin, 1e-6)
+  const rimEps = ySpan * 0.02
+
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i)
+    const y = pos.getY(i)
+    // Keep top + bottom rims dead flat so every wall meets at the same height
+    const onRim = y >= yMax - rimEps || y <= yMin + rimEps
+
+    let wrinkle = 0
+    if (!onRim) {
+      wrinkle =
+        Math.sin(x * 95 + y * 42) * amount * 0.55 +
+        Math.sin(x * 155 - y * 68) * amount * 0.35 +
+        Math.sin((x + y) * 210) * amount * 0.2
+    }
+
+    // Keep a flat panel behind the logo so it doesn’t clip into wrinkles
+    if (flatCenter) {
+      const nx = Math.abs(x) / flatCenter.hw
+      const ny = Math.abs(y - flatCenter.cy) / flatCenter.hh
+      const edge = Math.max(nx, ny)
+      if (edge < 1) {
+        const t = Math.min(1, Math.max(0, (1 - edge) / 0.35))
+        wrinkle *= 1 - t * t
+      }
+    }
+
+    pos.setZ(i, pos.getZ(i) + wrinkle)
+
+    if (flareTop > 0 && !onRim) {
+      const t = (y - yMin) / ySpan
+      const flare = t * t * flareTop
+      pos.setZ(i, pos.getZ(i) + flare)
+    }
+
+    // Snap rim to exact height so front/sides can’t drift
+    if (onRim) {
+      pos.setY(i, y >= yMax - rimEps ? yMax : yMin)
+      pos.setZ(i, 0)
+    }
+  }
+  pos.needsUpdate = true
+  geo.computeVertexNormals()
+  return geo
+}
+
+/** Kraft takeout bag — thin paper walls with a soft crinkle. */
+function createFastFoodBag(name = 'John Berger', labelMap = null) {
   const bag = new THREE.Group()
   bag.name = 'fastFoodBag'
 
-  const paperMat = mat(0xc4a06a, { roughness: 0.92, metalness: 0 })
-  const creaseMat = mat(0xb08955, { roughness: 0.9 })
+  const paperMat = new THREE.MeshStandardMaterial({
+    color: 0xc4a06a,
+    roughness: 0.96,
+    metalness: 0,
+    side: THREE.DoubleSide,
+  })
+  const sideMat = new THREE.MeshStandardMaterial({
+    color: 0xb8925c,
+    roughness: 0.95,
+    metalness: 0,
+    side: THREE.DoubleSide,
+  })
 
-  const w = 0.13
-  const d = 0.09
-  const h = 0.175
-  const t = 0.007
+  const w = 0.115
+  const d = 0.07
+  const h = 0.22
+  const wallY = h / 2
+  const flare = 0.0035
 
-  const bottom = new THREE.Mesh(new THREE.BoxGeometry(w, t, d), paperMat)
-  bottom.position.y = t / 2
-  bottom.castShadow = true
+  const bottom = new THREE.Mesh(new THREE.PlaneGeometry(w * 0.98, d * 0.98), paperMat)
+  bottom.rotation.x = -Math.PI / 2
+  bottom.position.y = 0.001
   bottom.receiveShadow = true
   bag.add(bottom)
 
-  const front = new THREE.Mesh(new THREE.BoxGeometry(w, h, t), paperMat)
-  front.position.set(0, h / 2 + t, d / 2 - t / 2)
+  const labelW = w * 0.82
+  const labelH = h * 0.68
+  const front = new THREE.Mesh(
+    crinklePaperGeometry(new THREE.PlaneGeometry(w, h, 12, 16), 0.0018, {
+      flareTop: flare,
+      flatCenter: { hw: labelW * 0.55, hh: labelH * 0.55, cy: -h * 0.02 },
+    }),
+    paperMat,
+  )
+  front.position.set(0, wallY, d / 2)
   front.castShadow = true
   bag.add(front)
 
-  const back = new THREE.Mesh(new THREE.BoxGeometry(w, h, t), paperMat)
-  back.position.set(0, h / 2 + t, -d / 2 + t / 2)
+  const back = new THREE.Mesh(
+    crinklePaperGeometry(new THREE.PlaneGeometry(w, h, 12, 16), 0.0016, {
+      flareTop: flare,
+    }),
+    paperMat,
+  )
+  back.position.set(0, wallY, -d / 2)
+  back.rotation.y = Math.PI
   back.castShadow = true
   bag.add(back)
 
-  const left = new THREE.Mesh(new THREE.BoxGeometry(t, h, d - t * 2), creaseMat)
-  left.position.set(-w / 2 + t / 2, h / 2 + t, 0)
+  const left = new THREE.Mesh(
+    crinklePaperGeometry(new THREE.PlaneGeometry(d, h, 12, 16), 0.0012, {
+      flareTop: flare,
+    }),
+    sideMat,
+  )
+  left.position.set(-w / 2, wallY, 0)
+  left.rotation.y = -Math.PI / 2
   left.castShadow = true
   bag.add(left)
 
-  const right = new THREE.Mesh(new THREE.BoxGeometry(t, h, d - t * 2), creaseMat)
-  right.position.set(w / 2 - t / 2, h / 2 + t, 0)
+  const right = new THREE.Mesh(
+    crinklePaperGeometry(new THREE.PlaneGeometry(d, h, 12, 16), 0.0012, {
+      flareTop: flare,
+    }),
+    sideMat,
+  )
+  right.position.set(w / 2, wallY, 0)
+  right.rotation.y = Math.PI / 2
   right.castShadow = true
   bag.add(right)
 
-  // Open top — thin folded lip around the rim (no solid cap / fill)
-  const lipH = 0.012
-  const lipY = h + t - lipH / 2 + 0.002
-  const frontLip = new THREE.Mesh(new THREE.BoxGeometry(w, lipH, t), creaseMat)
-  frontLip.position.set(0, lipY, d / 2 - t / 2)
-  bag.add(frontLip)
-  const backLip = new THREE.Mesh(new THREE.BoxGeometry(w, lipH, t), creaseMat)
-  backLip.position.set(0, lipY, -d / 2 + t / 2)
-  bag.add(backLip)
-  const leftLip = new THREE.Mesh(new THREE.BoxGeometry(t, lipH, d - t * 2), creaseMat)
-  leftLip.position.set(-w / 2 + t / 2, lipY, 0)
-  bag.add(leftLip)
-  const rightLip = new THREE.Mesh(new THREE.BoxGeometry(t, lipH, d - t * 2), creaseMat)
-  rightLip.position.set(w / 2 - t / 2, lipY, 0)
-  bag.add(rightLip)
-
-  // Darker inside faces so the hollow opening reads from above
-  const innerMat = mat(0x8a6a3e, { roughness: 0.95, side: THREE.BackSide })
-  const inner = new THREE.Mesh(
-    new THREE.BoxGeometry(w - t * 2, h - 0.01, d - t * 2),
-    innerMat,
-  )
-  inner.position.y = t + (h - 0.01) / 2
-  bag.add(inner)
-
+  const map = labelMap ?? createBagLabelTexture(name)
   const label = new THREE.Mesh(
-    new THREE.PlaneGeometry(w * 0.88, h * 0.78),
+    new THREE.PlaneGeometry(labelW, labelH),
     new THREE.MeshStandardMaterial({
-      map: createBagLabelTexture(name),
-      roughness: 0.88,
+      map,
+      roughness: 0.9,
       metalness: 0,
+      polygonOffset: true,
+      polygonOffsetFactor: -1,
+      polygonOffsetUnits: -1,
     }),
   )
-  label.position.set(0, h * 0.52 + t, d / 2 + 0.001)
+  label.position.set(0, h * 0.48, d / 2 + 0.0035)
   bag.add(label)
 
   return bag
@@ -351,6 +604,111 @@ function createDiningChair() {
   return chair
 }
 
+/** Table knife — one continuous silhouette from butt to tip. */
+function createKnife(material) {
+  const knife = new THREE.Group()
+  knife.name = 'knife'
+
+  // Full profile in top-down (X = length, Y = width): handle → bolster → blade
+  const shape = new THREE.Shape()
+  shape.moveTo(-0.06, -0.0035)
+  shape.lineTo(-0.058, -0.0045)
+  shape.lineTo(-0.02, -0.0048)
+  shape.lineTo(-0.008, -0.0042)
+  shape.lineTo(-0.002, -0.0055) // bolster into blade
+  shape.lineTo(0.045, -0.005)
+  shape.lineTo(0.07, -0.002)
+  shape.lineTo(0.078, 0) // tip
+  shape.lineTo(0.07, 0.0018)
+  shape.lineTo(0.04, 0.0048)
+  shape.lineTo(-0.002, 0.005)
+  shape.lineTo(-0.008, 0.004)
+  shape.lineTo(-0.02, 0.0046)
+  shape.lineTo(-0.058, 0.0045)
+  shape.lineTo(-0.06, 0.0035)
+  shape.lineTo(-0.06, -0.0035)
+
+  const body = new THREE.Mesh(
+    new THREE.ExtrudeGeometry(shape, {
+      depth: 0.0022,
+      bevelEnabled: true,
+      bevelThickness: 0.00035,
+      bevelSize: 0.00035,
+      bevelSegments: 1,
+    }),
+    material,
+  )
+  body.rotation.x = -Math.PI / 2
+  body.position.y = 0.0022
+  body.castShadow = true
+  knife.add(body)
+
+  return knife
+}
+
+/** Dinner fork — continuous handle into neck/head, then four tines. */
+function createFork(material) {
+  const fork = new THREE.Group()
+  fork.name = 'fork'
+
+  // Handle + neck + shoulder as one piece
+  const shape = new THREE.Shape()
+  shape.moveTo(-0.058, -0.0032)
+  shape.lineTo(-0.056, -0.0042)
+  shape.lineTo(-0.018, -0.0044)
+  shape.lineTo(-0.004, -0.0036)
+  shape.lineTo(0.006, -0.0075) // widen into head
+  shape.lineTo(0.014, -0.008)
+  shape.lineTo(0.014, 0.008)
+  shape.lineTo(0.006, 0.0075)
+  shape.lineTo(-0.004, 0.0036)
+  shape.lineTo(-0.018, 0.0044)
+  shape.lineTo(-0.056, 0.0042)
+  shape.lineTo(-0.058, 0.0032)
+  shape.lineTo(-0.058, -0.0032)
+
+  const body = new THREE.Mesh(
+    new THREE.ExtrudeGeometry(shape, {
+      depth: 0.002,
+      bevelEnabled: true,
+      bevelThickness: 0.0003,
+      bevelSize: 0.0003,
+      bevelSegments: 1,
+    }),
+    material,
+  )
+  body.rotation.x = -Math.PI / 2
+  body.position.y = 0.002
+  body.castShadow = true
+  fork.add(body)
+
+  // Tines rooted in the head so they read as connected
+  const tineZs = [-0.006, -0.002, 0.002, 0.006]
+  for (const z of tineZs) {
+    const tineShape = new THREE.Shape()
+    tineShape.moveTo(0.01, -0.0009)
+    tineShape.lineTo(0.042, -0.0007)
+    tineShape.lineTo(0.048, 0)
+    tineShape.lineTo(0.042, 0.0007)
+    tineShape.lineTo(0.01, 0.0009)
+    tineShape.lineTo(0.01, -0.0009)
+
+    const tine = new THREE.Mesh(
+      new THREE.ExtrudeGeometry(tineShape, {
+        depth: 0.0016,
+        bevelEnabled: false,
+      }),
+      material,
+    )
+    tine.rotation.x = -Math.PI / 2
+    tine.position.set(0, 0.0022, z)
+    tine.castShadow = true
+    fork.add(tine)
+  }
+
+  return fork
+}
+
 /**
  * Dining table with Quaternius burger, fries, and soda (CC0).
  * https://quaternius.com/packs/ultimatefood.html
@@ -387,50 +745,97 @@ export function createDiningTable() {
 
   const surfaceY = 0.765
 
+  // Invisible hit deck over the whole tabletop so the meal (not only the menu) is clickable
+  const hitDeck = new THREE.Mesh(
+    new THREE.BoxGeometry(1.4, 0.08, 0.85),
+    new THREE.MeshBasicMaterial({ visible: false }),
+  )
+  hitDeck.position.y = surfaceY + 0.04
+  hitDeck.userData.interactive = 'about'
+  hitDeck.userData.skipHover = true
+  group.add(hitDeck)
+
+  // Meal set — menu as backdrop; food sits in front (toward the camera) so it
+  // stays visible when you zoom the menu.
+  const menu = createBurgerMenu()
+  menu.position.set(0.02, surfaceY + 0.004, 0.02)
+  menu.rotation.y = Math.PI + 0.08
+  group.add(menu)
+
+  group.userData.screenSize = menu.userData.screenSize
+
   const plate = createPlate()
-  plate.position.set(-0.15, surfaceY, 0.05)
+  plate.position.set(-0.28, surfaceY, -0.14)
   group.add(plate)
 
   const burgerSlot = new THREE.Group()
   burgerSlot.name = 'hamburger'
-  burgerSlot.position.set(-0.15, surfaceY + 0.012, 0.04)
-  burgerSlot.rotation.y = 0.35
+  burgerSlot.position.set(-0.28, surfaceY + 0.006, -0.15)
+  burgerSlot.rotation.y = 0.25
   group.add(burgerSlot)
 
   const friesSlot = new THREE.Group()
   friesSlot.name = 'fries'
-  friesSlot.position.set(0.12, surfaceY, 0.08)
-  friesSlot.rotation.y = -0.4
+  friesSlot.position.set(0.22, surfaceY, -0.02)
+  friesSlot.rotation.y = -0.35 + Math.PI
   group.add(friesSlot)
 
   const drinkSlot = new THREE.Group()
   drinkSlot.name = 'drink'
-  drinkSlot.position.set(0.28, surfaceY, -0.12)
+  // Left of the menu, still behind the burger in the zoomed view
+  drinkSlot.position.set(-0.22, surfaceY, 0.06)
   group.add(drinkSlot)
 
-  const bag = createFastFoodBag('John Berger')
-  bag.position.set(0.48, surfaceY, 0.06)
-  bag.rotation.y = -0.55
+  const brandLogo = createBagLabelTexture('John Berger')
+
+  const bag = createFastFoodBag('John Berger', brandLogo)
+  bag.position.set(0.38, surfaceY, -0.08)
+  bag.rotation.y = -0.4 + Math.PI + Math.PI / 2
   group.add(bag)
 
+  // Napkin nearer the menu; utensils sit on the near edge of the napkin
+  const napkinX = 0.02
+  const napkinZ = -0.26
+  const napkinRot = 0.12
   const napkin = new THREE.Mesh(
     new THREE.BoxGeometry(0.16, 0.004, 0.16),
     mat(0xe8efe9, { roughness: 0.9 }),
   )
-  napkin.position.set(-0.45, surfaceY + 0.002, -0.15)
-  napkin.rotation.y = 0.2
+  napkin.position.set(napkinX, surfaceY + 0.002, napkinZ)
+  napkin.rotation.y = napkinRot
   group.add(napkin)
 
   const cutleryMat = mat(0xc0c4c8, { roughness: 0.3, metalness: 0.8 })
-  const knife = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.004, 0.016), cutleryMat)
-  knife.position.set(-0.42, surfaceY + 0.006, 0.05)
-  knife.rotation.y = 0.15
+  const cosN = Math.cos(napkinRot)
+  const sinN = Math.sin(napkinRot)
+  const cutleryGap = 0.045
+  // localZ negative = toward the table edge / camera
+  const cutleryLocalZ = -0.035
+  const placeOnNapkin = (localX, localZ = 0) => ({
+    x: napkinX + localX * cosN + localZ * sinN,
+    z: napkinZ - localX * sinN + localZ * cosN,
+  })
+
+  const knifePos = placeOnNapkin(cutleryGap, cutleryLocalZ)
+  const knife = createKnife(cutleryMat)
+  knife.position.set(knifePos.x, surfaceY + 0.016, knifePos.z)
+  knife.rotation.y = Math.PI / 2 + 0.45 + Math.PI
   group.add(knife)
 
-  const fork = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.004, 0.014), cutleryMat)
-  fork.position.set(-0.48, surfaceY + 0.006, 0.05)
-  fork.rotation.y = 0.15
+  const forkPos = placeOnNapkin(-cutleryGap, cutleryLocalZ)
+  const fork = createFork(cutleryMat)
+  fork.position.set(forkPos.x, surfaceY + 0.016, forkPos.z)
+  fork.rotation.y = Math.PI / 2 - 0.45 + Math.PI
   group.add(fork)
+
+  // Table surface + meal props are the about hotspot (chairs stay scenic)
+  markAbout(top)
+  markAbout(apron)
+  markAbout(plate)
+  markAbout(bag)
+  markAbout(napkin)
+  markAbout(knife)
+  markAbout(fork)
 
   // Four chairs around the table
   const chairs = [
@@ -458,6 +863,9 @@ export function createDiningTable() {
     burgerSlot.add(burger)
     friesSlot.add(fries)
     drinkSlot.add(soda)
+    markAbout(burger)
+    markAbout(fries)
+    markAbout(soda)
     return group
   })
 

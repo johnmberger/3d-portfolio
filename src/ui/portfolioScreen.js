@@ -21,7 +21,6 @@ export function createPortfolioScreen(monitor) {
 
   element.innerHTML = `
     <div class="folio-frame">
-      <button class="folio-close" type="button" aria-label="Close resume">✕</button>
       <div class="folio-viewport">
         <div class="folio-placeholder">
           <p class="folio-placeholder__kicker">Resume</p>
@@ -37,7 +36,6 @@ export function createPortfolioScreen(monitor) {
   `
 
   const iframe = element.querySelector('.folio-iframe')
-  const closeBtn = element.querySelector('.folio-close')
 
   let started = false
   let ready = false
@@ -114,7 +112,7 @@ export function createPortfolioScreen(monitor) {
     // no-op — resume stays loaded for the next focus
   }
 
-  return { element, object, closeBtn, preload, show, hide }
+  return { element, object, preload, show, hide }
 }
 
 /** CSS3D ignores WebGL depth — only show once focused (not mid-zoom), and not from behind. */

@@ -6,6 +6,28 @@ function markInteractive(mesh) {
   return mesh
 }
 
+/** Model attributions shown on the wall plaque (and in the focus helper). */
+export const CREDITS_ENTRIES = [
+  {
+    title: 'Shiba',
+    by: 'zixisun02 · Sketchfab',
+    license: 'CC BY 4.0',
+    href: 'https://sketchfab.com/3d-models/shiba-faef9fe5ace445e7b2989d1c1ece361c',
+  },
+  {
+    title: 'Bicycle',
+    by: 'Poly by Google',
+    license: 'CC BY 3.0',
+    href: 'https://poly.pizza/m/19VoUuA2pcN',
+  },
+  {
+    title: 'Food',
+    by: 'Quaternius',
+    license: 'CC0',
+    href: 'https://quaternius.com/packs/ultimatefood.html',
+  },
+]
+
 /** Framed wall print with model attributions — clickable, zooms like other hotspots. */
 export function createCreditsPlaque() {
   const group = new THREE.Group()
@@ -69,14 +91,8 @@ export function createCreditsPlaque() {
   ctx.font = '500 22px "Source Sans 3", system-ui, sans-serif'
   ctx.fillText('Models used in this room', 320, 168)
 
-  const entries = [
-    { title: 'Shiba', by: 'zixisun02 · Sketchfab', license: 'CC BY 4.0' },
-    { title: 'Bicycle', by: 'Poly by Google', license: 'CC BY 3.0' },
-    { title: 'Food', by: 'Quaternius', license: 'CC0' },
-  ]
-
   let y = 250
-  for (const entry of entries) {
+  for (const entry of CREDITS_ENTRIES) {
     ctx.fillStyle = '#c45a3a'
     ctx.font = '600 28px Fraunces, Georgia, serif'
     ctx.fillText(entry.title, 320, y)
@@ -141,6 +157,7 @@ export function createCreditsPlaque() {
     height: artH * 0.78,
     fill: 0.82,
   }
+  group.userData.credits = CREDITS_ENTRIES
 
   // Left wall (−X), above/beside the vinyl credenza end (credenza on −Z; this wall is perpendicular)
   group.position.set(-(WALL_POS - 0.02), 1.85, -3.35)

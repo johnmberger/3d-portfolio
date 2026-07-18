@@ -27,6 +27,10 @@ body,
   background: #d4c4b0;
 }
 
+body.is-app-ready #app {
+  opacity: 1;
+}
+
 #webgl {
   display: block;
   width: 100%;
@@ -56,43 +60,41 @@ body,
   opacity: 0;
 }
 
-.exit-screen {
-  position: fixed;
-  top: clamp(1.25rem, 3vw, 2rem);
-  right: clamp(1.25rem, 3vw, 2rem);
-  z-index: 3;
+/* Shared ✕ to leave a focused screen */
+.focus-close {
   appearance: none;
-  border: 1px solid rgba(28, 36, 32, 0.18);
-  background: rgba(232, 239, 233, 0.92);
-  color: var(--ink);
-  font-family: "Source Sans 3", system-ui, sans-serif;
-  font-size: 0.9rem;
-  font-weight: 500;
-  letter-spacing: 0.01em;
-  padding: 0.55rem 0.9rem;
+  border: 0;
+  border-radius: 8px;
+  background: rgba(15, 20, 18, 0.78);
+  color: rgba(228, 239, 232, 0.85);
+  font-size: 18px;
+  line-height: 1;
+  padding: 10px 12px;
   cursor: pointer;
+  transition: color 0.2s ease, opacity 0.2s ease, background 0.2s ease;
+}
+
+.focus-close:hover {
+  color: #e4efe8;
+  background: rgba(15, 20, 18, 0.95);
+}
+
+.focus-close--hud {
+  position: fixed;
+  z-index: 5;
   pointer-events: auto;
-  backdrop-filter: blur(8px);
-  transition:
-    opacity 0.25s ease,
-    background 0.2s ease,
-    border-color 0.2s ease;
+  box-shadow: 0 6px 18px rgba(15, 20, 18, 0.28);
 }
 
-.exit-screen[hidden] {
+.focus-close--hud[hidden] {
   display: none;
-}
-
-.exit-screen:hover {
-  background: #fff;
-  border-color: rgba(28, 36, 32, 0.35);
 }
 
 /* Floating focus bubble (beside vinyl / bathroom mirror) */
 .focus-helper {
   position: fixed;
   z-index: 4;
-  max-width: min(260px, 42vw);
+  max-width: min(300px, 46vw);
   padding: 1rem 1.15rem;
   pointer-events: none;
   color: var(--ink);
@@ -144,12 +146,57 @@ body,
   line-height: 1.15;
 }
 
+.focus-helper__role {
+  margin: 0.25rem 0 0;
+  font-family: "Source Sans 3", system-ui, sans-serif;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--hint);
+}
+
+.focus-helper__role[hidden] {
+  display: none;
+}
+
 .focus-helper__blurb {
   margin: 0.4rem 0 0;
   font-family: "Source Sans 3", system-ui, sans-serif;
   font-size: 0.88rem;
   line-height: 1.4;
   color: var(--hint);
+}
+
+.focus-helper__facts {
+  list-style: none;
+  margin: 0.7rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.focus-helper__facts[hidden] {
+  display: none;
+}
+
+.focus-helper__fact {
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+  font-family: "Source Sans 3", system-ui, sans-serif;
+}
+
+.focus-helper__fact-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--hint);
+}
+
+.focus-helper__fact-value {
+  font-size: 0.88rem;
+  color: var(--ink);
 }
 
 .focus-helper__link {
@@ -171,6 +218,48 @@ body,
 
 .focus-helper__link:hover {
   opacity: 0.7;
+}
+
+.focus-helper__links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-top: 0.75rem;
+  pointer-events: auto;
+}
+
+.focus-helper__links[hidden] {
+  display: none;
+}
+
+.focus-helper__credit {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.45rem 0.55rem;
+  border-radius: 0.65rem;
+  background: rgba(28, 36, 32, 0.04);
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.focus-helper__credit:hover {
+  background: rgba(28, 36, 32, 0.09);
+}
+
+.focus-helper__credit-title {
+  font-family: "Fraunces", Georgia, serif;
+  font-weight: 600;
+  font-size: 0.95rem;
+  letter-spacing: -0.01em;
+}
+
+.focus-helper__credit-meta {
+  font-family: "Source Sans 3", system-ui, sans-serif;
+  font-size: 0.78rem;
+  color: var(--hint);
 }
 
 .brand {
@@ -394,35 +483,6 @@ body,
   pointer-events: auto;
 }
 
-.folio-close {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  z-index: 2;
-  appearance: none;
-  border: 0;
-  border-radius: 6px;
-  background: rgba(15, 20, 18, 0.72);
-  color: var(--screen-muted);
-  font-size: 16px;
-  line-height: 1;
-  padding: 8px 10px;
-  cursor: pointer;
-  transition: color 0.2s ease, opacity 0.2s ease, background 0.2s ease;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.portfolio-screen.is-interactive .folio-close {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.folio-close:hover {
-  color: var(--screen-ink);
-  background: rgba(15, 20, 18, 0.9);
-}
-
 body.is-pointer canvas,
 body.is-pointer .css3d-layer {
   cursor: pointer;
@@ -459,6 +519,7 @@ body.is-pointer .css3d-layer {
 }
 
 .earworms-frame {
+  position: relative;
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -559,6 +620,7 @@ body.is-pointer .css3d-layer {
 }
 
 .poopyhooch-frame {
+  position: relative;
   display: flex;
   flex-direction: column;
   width: 100%;

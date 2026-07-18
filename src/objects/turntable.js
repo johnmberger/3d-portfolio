@@ -506,7 +506,8 @@ export function createTurntable() {
   const cabD = cabinet.userData.depth
   const topOverhang = 0.04 // top slab is deeper than the body
   const wallGap = 0.01 // hairline clearance to avoid z-fighting
-  group.position.set(-2.85, 0, -(WALL_POS - wallGap) + (cabD + topOverhang) / 2)
+  // Keep right edge clear of the window sill (sill left ≈ −2.175)
+  group.position.set(-3.35, 0, -(WALL_POS - wallGap) + (cabD + topOverhang) / 2)
   group.rotation.y = 0
 
   // Whole unit is a hotspot: credenza, deck, lids, and records

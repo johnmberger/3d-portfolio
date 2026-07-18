@@ -13,7 +13,7 @@ import { createRug } from './objects/rug.js'
 import { createDog, updateDog } from './objects/dog.js'
 import { createWallArt } from './objects/wallArt.js'
 import { createBathroom, updateBathroom } from './objects/bathroom.js'
-import { createCreditsPlaque, updateCreditsPlaque } from './objects/credits.js'
+import { createCreditsPlaque, updateCreditsPlaque, CREDITS_ENTRIES } from './objects/credits.js'
 import { createCouch } from './objects/couch.js'
 import { createArmchair } from './objects/armchair.js'
 import { createTV, updateTV } from './objects/tv.js'
@@ -41,6 +41,7 @@ import {
   POOPYHOOCH_URL,
 } from './ui/poopyhoochScreen.js'
 import { createFocusHelper } from './ui/focusHelper.js'
+import { createFocusClose } from './ui/focusClose.js'
 import { createLoadingScreen } from './ui/loadingScreen.js'
 
 RectAreaLightUniformsLib.init()
@@ -54,7 +55,7 @@ const app = document.querySelector('#app')
 const canvas = document.querySelector('#webgl')
 const hud = document.querySelector('.hud')
 const hint = document.querySelector('.hint')
-const exitBtn = document.querySelector('.exit-screen')
+const exitBtn = document.querySelector('.focus-close--hud')
 const hudActions = document.querySelector('.hud-actions')
 
 const isMobile =
@@ -86,16 +87,16 @@ scene.fog = new THREE.Fog(0xd4c4b0, 9, 20)
 const FREE_CAMERA = false
 
 const camera = new THREE.PerspectiveCamera(
-  44,
+  48,
   window.innerWidth / window.innerHeight,
   0.1,
   80,
 )
-// Start in the kitchen corner (+X / +Z), looking toward the opposite corner (−X / −Z)
-camera.position.set(3.35, 1.55, 3.4)
+// Kitchen nook (+X / +Z) — dining readable on the right, living room ahead
+camera.position.set(2.75, 1.72, 3.4)
 
 const controls = new OrbitControls(camera, canvas)
-controls.target.set(-2.15, 0.95, -2.2)
+controls.target.set(0.85, 1.0, -0.55)
 controls.enableDamping = true
 controls.dampingFactor = 0.06
 controls.enablePan = true
@@ -219,12 +220,16 @@ earwormsUi.preload()
 const poopyUi = createPoopyHoochScreen(bathroom)
 poopyUi.preload()
 const focusHelper = createFocusHelper(app)
+const focusClose = createFocusClose(exitBtn)
 const rig = createCameraRig(camera, controls)
 const cameraBounds = createCameraBounds(camera, controls)
 const monitorScreen = monitor.getObjectByName('screen')
 const earwormsScreen = turntable.getObjectByName('screen')
 const bathroomScreen = bathroom.getObjectByName('screen')
 const creditsScreen = creditsPlaque.getObjectByName('screen')
+const aboutScreen = dining.getObjectByName('screen')
+const photoShelf = wallArt.getObjectByName('photoShelf')
+const photoScreen = photoShelf.getObjectByName('screen')
 
 const raycaster = new THREE.Raycaster()
 const pointer = new THREE.Vector2()
@@ -235,6 +240,8 @@ const interactiveRoots = {
   turntable,
   bathroom,
   credits: creditsPlaque,
+  about: dining,
+  photo: photoShelf,
 }
 let activeFocus = null
 let prevMode = 'explore'
@@ -264,7 +271,7 @@ function setPoopyInteractive(on) {
 
 function setFocusedUi(on) {
   hud.classList.toggle('is-dimmed', on)
-  exitBtn.hidden = !on
+  if (!on) focusClose.hide()
   if (hudActions) hudActions.style.opacity = on ? '0' : '1'
   if (hudActions) hudActions.style.pointerEvents = on ? 'none' : 'auto'
 }
@@ -274,7 +281,9 @@ function openPortfolio() {
   hoverHighlight.clear()
   activeFocus = 'portfolio'
   portfolioUi.show()
-  rig.enterFocus(monitorScreen, { width: 0.85, height: 0.48, fill: 0.94 })
+  const size = { width: 0.85, height: 0.48, fill: 0.78 }
+  focusClose.show({ anchor: monitorScreen, width: size.width, height: size.height })
+  rig.enterFocus(monitorScreen, size)
   setHint('Reading the resume…')
 }
 
@@ -289,6 +298,11 @@ function openEarworms() {
     href: EARWORMS_URL,
     anchor: earwormsScreen,
     width: earwormsUi.screenSize.width,
+  })
+  focusClose.show({
+    anchor: earwormsScreen,
+    width: earwormsUi.screenSize.width,
+    height: earwormsUi.screenSize.height,
   })
   rig.enterFocus(earwormsScreen, earwormsUi.screenSize)
   setHint('Dropping the needle…')
@@ -306,6 +320,11 @@ function openPoopyHooch() {
     anchor: bathroomScreen,
     width: poopyUi.screenSize.width,
   })
+  focusClose.show({
+    anchor: bathroomScreen,
+    width: poopyUi.screenSize.width,
+    height: poopyUi.screenSize.height,
+  })
   rig.enterFocus(bathroomScreen, poopyUi.screenSize)
   setHint('Checking the mirror…')
 }
@@ -316,12 +335,46 @@ function openCredits() {
   activeFocus = 'credits'
   focusHelper.show({
     title: 'Credits',
-    blurb: 'Models that helped build this room.',
+    blurb: 'Models used in this room — open each for attribution.',
+    links: CREDITS_ENTRIES,
     anchor: creditsScreen,
     width: creditsPlaque.userData.screenSize.width,
   })
+  focusClose.show({
+    anchor: creditsScreen,
+    width: creditsPlaque.userData.screenSize.width,
+    height: creditsPlaque.userData.screenSize.height,
+  })
   rig.enterFocus(creditsScreen, creditsPlaque.userData.screenSize)
   setHint('Reading the plaque…')
+}
+
+function openAbout() {
+  if (FREE_CAMERA || rig.isBusy || rig.isFocused) return
+  hoverHighlight.clear()
+  activeFocus = 'about'
+  const size = dining.userData.screenSize
+  focusClose.show({
+    anchor: aboutScreen,
+    width: size.width,
+    height: size.height,
+  })
+  rig.enterFocus(aboutScreen, size)
+  setHint('Reading the menu…')
+}
+
+function openPhoto() {
+  if (FREE_CAMERA || rig.isBusy || rig.isFocused) return
+  hoverHighlight.clear()
+  activeFocus = 'photo'
+  const size = photoShelf.userData.screenSize
+  focusClose.show({
+    anchor: photoScreen,
+    width: size.width,
+    height: size.height,
+  })
+  rig.enterFocus(photoScreen, size)
+  setHint('Looking closer…')
 }
 
 function closeFocus() {
@@ -331,6 +384,7 @@ function closeFocus() {
   setPoopyInteractive(false)
   setFocusedUi(false)
   focusHelper.hide()
+  focusClose.hide()
   if (activeFocus === 'portfolio') portfolioUi.hide()
   if (activeFocus === 'earworms') earwormsUi.hide()
   if (activeFocus === 'poopyhooch') poopyUi.hide()
@@ -345,7 +399,7 @@ function pickInteractive(clientX, clientY) {
   raycaster.setFromCamera(pointer, camera)
 
   const hits = raycaster.intersectObjects(
-    [monitor, turntable, bathroom, creditsPlaque],
+    [monitor, turntable, bathroom, creditsPlaque, dining, photoShelf],
     true,
   )
   for (const hit of hits) {
@@ -354,7 +408,9 @@ function pickInteractive(clientX, clientY) {
       kind === 'monitor' ||
       kind === 'turntable' ||
       kind === 'bathroom' ||
-      kind === 'credits'
+      kind === 'credits' ||
+      kind === 'about' ||
+      kind === 'photo'
     ) {
       return kind
     }
@@ -390,15 +446,16 @@ canvas.addEventListener('pointerdown', (event) => {
   } else if (kind === 'credits') {
     event.preventDefault()
     openCredits()
+  } else if (kind === 'about') {
+    event.preventDefault()
+    openAbout()
+  } else if (kind === 'photo') {
+    event.preventDefault()
+    openPhoto()
   }
 })
 
-exitBtn.addEventListener('click', () => closeFocus())
-
-portfolioUi.closeBtn.addEventListener('click', (e) => {
-  e.stopPropagation()
-  closeFocus()
-})
+exitBtn?.addEventListener('click', () => closeFocus())
 
 window.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') closeFocus()
@@ -437,15 +494,19 @@ function tick(timestamp) {
       setFocusedUi(true)
       if (activeFocus === 'portfolio') {
         setPortfolioInteractive(true)
-        setHint('Back to room · Esc')
+        setHint('Esc to leave')
       } else if (activeFocus === 'earworms') {
         setEarwormsInteractive(true)
-        setHint('Back to room · Esc')
+        setHint('Esc to leave')
       } else if (activeFocus === 'poopyhooch') {
         setPoopyInteractive(true)
-        setHint('Back to room · Esc')
+        setHint('Esc to leave')
       } else if (activeFocus === 'credits') {
-        setHint('Back to room · Esc')
+        setHint('Esc to leave')
+      } else if (activeFocus === 'about') {
+        setHint('Esc to leave')
+      } else if (activeFocus === 'photo') {
+        setHint('Esc to leave')
       }
     } else if (mode === 'explore') {
       setPortfolioInteractive(false)
@@ -460,6 +521,7 @@ function tick(timestamp) {
 
   const focusing = rig.isFocused || mode === 'toFocus'
   focusHelper.update(camera)
+  focusClose.update(camera)
   updateMonitor(monitor, elapsed, {
     focused: focusing && activeFocus === 'portfolio',
   })

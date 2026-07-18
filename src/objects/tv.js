@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import { WALL_POS } from './roomConstants.js'
+import { createSnakePlant } from './plants.js'
 
 function mat(color, props = {}) {
   return new THREE.MeshStandardMaterial({
@@ -109,11 +110,134 @@ export function createTV() {
   bar.castShadow = true
   group.add(bar)
 
-  // Slightly left of the sectional center, on the +Z wall
-  group.position.set(-2.9, 0, WALL_POS - 0.08)
+  // Xbox Series X — tall tower on the right end of the console
+  const xbox = createXboxSeriesX()
+  xbox.position.set(0.72, consoleH, 0.14)
+  group.add(xbox)
+
+  // Small plant on the opposite end
+  const tvPlant = createSnakePlant({
+    potColor: 0xc4683a,
+    leafCount: 5,
+    potScale: 0.38,
+    height: 0.36,
+  })
+  tvPlant.name = 'tvConsolePlant'
+  tvPlant.position.set(-0.72, consoleH, 0.14)
+  tvPlant.rotation.y = -0.4
+  group.add(tvPlant)
+
+  // Centered on the sectional’s main run (the seats facing the TV, opposite the chaise)
+  group.position.set(-2.05, 0, WALL_POS - 0.08)
   group.rotation.y = Math.PI
 
   return group
+}
+
+/** Tall matte-black Series X tower (approx. 1:1 desk-scale proportions). */
+function createXboxSeriesX() {
+  const xbox = new THREE.Group()
+  xbox.name = 'xboxSeriesX'
+
+  const chassisMat = mat(0x1a1a1c, { roughness: 0.55, metalness: 0.2 })
+  const darkMat = mat(0x0e0e10, { roughness: 0.45, metalness: 0.25 })
+  const ventMat = mat(0x2a2a2e, { roughness: 0.4, metalness: 0.35 })
+  const slotMat = mat(0x050506, { roughness: 0.85 })
+  // Power button — dark Xbox pill, subtle on glow (not a big green badge)
+  const powerMat = new THREE.MeshStandardMaterial({
+    color: 0x1c1c1e,
+    emissive: 0x1a3a1a,
+    emissiveIntensity: 0.2,
+    roughness: 0.35,
+    metalness: 0.25,
+  })
+
+  // Body ~15×15×30 cm
+  const w = 0.15
+  const d = 0.15
+  const h = 0.3
+  const frontZ = d / 2 + 0.002
+
+  const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), chassisMat)
+  body.position.y = h / 2
+  body.castShadow = true
+  body.receiveShadow = true
+  xbox.add(body)
+
+  // Front face plate (slight inset)
+  const face = new THREE.Mesh(
+    new THREE.BoxGeometry(w * 0.94, h * 0.97, 0.004),
+    darkMat,
+  )
+  face.position.set(0, h / 2, frontZ - 0.001)
+  xbox.add(face)
+
+  // Power button — top-left of the front (real Series X placement)
+  const power = new THREE.Mesh(new THREE.CircleGeometry(0.009, 20), powerMat)
+  power.position.set(-w * 0.28, h * 0.88, frontZ + 0.002)
+  xbox.add(power)
+
+  // Thin horizontal disc slot under the power button
+  const slot = new THREE.Mesh(
+    new THREE.BoxGeometry(w * 0.42, 0.0035, 0.005),
+    slotMat,
+  )
+  slot.position.set(-w * 0.12, h * 0.78, frontZ + 0.002)
+  xbox.add(slot)
+
+  // Small eject nub beside the slot
+  const eject = new THREE.Mesh(
+    new THREE.CircleGeometry(0.004, 12),
+    mat(0x18181a, { roughness: 0.5, metalness: 0.3 }),
+  )
+  eject.position.set(w * 0.14, h * 0.78, frontZ + 0.002)
+  xbox.add(eject)
+
+  // Pairing button + USB cue near bottom-right
+  const sync = new THREE.Mesh(
+    new THREE.CircleGeometry(0.005, 12),
+    mat(0x222226, { roughness: 0.45 }),
+  )
+  sync.position.set(w * 0.28, h * 0.12, frontZ + 0.002)
+  xbox.add(sync)
+
+  const usb = new THREE.Mesh(
+    new THREE.BoxGeometry(0.018, 0.008, 0.004),
+    slotMat,
+  )
+  usb.position.set(w * 0.12, h * 0.12, frontZ + 0.002)
+  xbox.add(usb)
+
+  // Top vent — Series X “X” grille cue
+  const ventPlate = new THREE.Mesh(
+    new THREE.BoxGeometry(w * 0.92, 0.004, d * 0.92),
+    ventMat,
+  )
+  ventPlate.position.y = h + 0.002
+  xbox.add(ventPlate)
+
+  const ventBarMat = mat(0x121214, { roughness: 0.5, metalness: 0.3 })
+  for (const angle of [Math.PI / 4, -Math.PI / 4]) {
+    const bar = new THREE.Mesh(
+      new THREE.BoxGeometry(w * 0.78, 0.005, 0.018),
+      ventBarMat,
+    )
+    bar.position.y = h + 0.005
+    bar.rotation.y = angle
+    xbox.add(bar)
+  }
+
+  // Side intake slits (left)
+  for (let i = 0; i < 5; i++) {
+    const slit = new THREE.Mesh(
+      new THREE.BoxGeometry(0.004, h * 0.1, d * 0.55),
+      darkMat,
+    )
+    slit.position.set(-w / 2 - 0.001, h * (0.25 + i * 0.12), 0)
+    xbox.add(slit)
+  }
+
+  return xbox
 }
 
 export function updateTV(tv, elapsed) {

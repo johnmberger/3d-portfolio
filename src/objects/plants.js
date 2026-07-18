@@ -717,7 +717,7 @@ function createCactus({
 
 // —— Snake plant (Sansevieria) ——
 
-function createSnakePlant({
+export function createSnakePlant({
   potColor = 0xd4784a,
   leafCount = 7,
   potScale = 1,
@@ -1436,7 +1436,8 @@ export function createPlants() {
     height: 1.55,
   })
   stereoCactus.position.set(-(WALL_POS - 0.32), 0, -2.15)
-  stereoCactus.rotation.y = 0.55
+  // Arms along the wall (±Z) so neither clips into −X
+  stereoCactus.rotation.y = 1.15
   group.add(stereoCactus)
 
   // Hanging planters — pulled off the walls so trailing leaves don’t clip

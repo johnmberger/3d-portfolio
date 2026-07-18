@@ -1,28 +1,32 @@
 /**
- * Fullscreen loading overlay. Fades out once the scene has painted
- * and a short minimum dwell has elapsed.
+ * Fullscreen loading overlay. Markup lives in index.html so the first paint
+ * never flashes an unstyled app shell. Fades out once the scene is ready.
  */
 export function createLoadingScreen(root = document.body) {
-  const el = document.createElement('div')
-  el.className = 'loading-screen'
-  el.setAttribute('role', 'status')
-  el.setAttribute('aria-live', 'polite')
-  el.innerHTML = `
-    <div class="loading-screen__inner">
-      <p class="loading-screen__brand">John's Studio.</p>
-      <p class="loading-screen__status">Opening the room…</p>
-      <div class="loading-screen__bar" aria-hidden="true">
-        <span class="loading-screen__bar-fill"></span>
+  let el = document.getElementById('loading-screen')
+  if (!el) {
+    el = document.createElement('div')
+    el.id = 'loading-screen'
+    el.className = 'loading-screen'
+    el.setAttribute('role', 'status')
+    el.setAttribute('aria-live', 'polite')
+    el.innerHTML = `
+      <div class="loading-screen__inner">
+        <p class="loading-screen__brand">John's Studio.</p>
+        <p class="loading-screen__status">Opening the room…</p>
+        <div class="loading-screen__bar" aria-hidden="true">
+          <span class="loading-screen__bar-fill"></span>
+        </div>
       </div>
-    </div>
-  `
-  root.appendChild(el)
+    `
+    root.prepend(el)
+  }
 
   const fill = el.querySelector('.loading-screen__bar-fill')
   const status = el.querySelector('.loading-screen__status')
   const started = performance.now()
   const minDwell = 900
-  let progress = 0
+  let progress = 0.08
   let done = false
 
   function setProgress(p, message) {
@@ -35,6 +39,7 @@ export function createLoadingScreen(root = document.body) {
     if (done) return Promise.resolve()
     done = true
     setProgress(1, 'Welcome in')
+    document.body.classList.add('is-app-ready')
     el.classList.add('is-done')
     return new Promise((resolve) => {
       const finish = () => {

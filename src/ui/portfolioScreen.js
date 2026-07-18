@@ -115,6 +115,42 @@ export function createPortfolioScreen(monitor) {
   return { element, object, preload, show, hide }
 }
 
+/**
+ * Flat scrollable résumé panel for touch — CSS3D iframes don't scroll reliably on mobile.
+ */
+export function createMobileResumeSheet(parent = document.getElementById('app')) {
+  const sheet = document.createElement('div')
+  sheet.className = 'resume-sheet'
+  sheet.hidden = true
+  sheet.setAttribute('role', 'dialog')
+  sheet.setAttribute('aria-label', 'Résumé')
+  sheet.innerHTML = `
+    <iframe
+      class="resume-sheet__iframe"
+      title="John Berger — Résumé"
+      referrerpolicy="no-referrer-when-downgrade"
+    ></iframe>
+  `
+  parent.appendChild(sheet)
+
+  const iframe = sheet.querySelector('.resume-sheet__iframe')
+  let started = false
+
+  function show() {
+    if (!started) {
+      started = true
+      iframe.src = RESUME_URL
+    }
+    sheet.hidden = false
+  }
+
+  function hide() {
+    sheet.hidden = true
+  }
+
+  return { element: sheet, show, hide }
+}
+
 /** CSS3D ignores WebGL depth — only show once focused (not mid-zoom), and not from behind. */
 export function updatePortfolioVisibility(
   { object },

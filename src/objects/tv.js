@@ -11,9 +11,15 @@ function mat(color, props = {}) {
   })
 }
 
+function markInteractive(mesh) {
+  mesh.userData.interactive = 'tv'
+  return mesh
+}
+
 /**
  * Slim wall-mounted TV with a soft screen glow and a low media shelf.
  * Front-left nook — faces into the room from the +Z wall.
+ * Clickable: zooms into a news-broadcast explainer about the apartment.
  */
 export function createTV() {
   const group = new THREE.Group()
@@ -25,37 +31,43 @@ export function createTV() {
 
   const screenW = 1.95
   const screenH = 1.1
+  const panelW = screenW - 0.04
+  const panelH = screenH - 0.04
   const screenY = 1.5
 
+  group.userData.screenSize = { width: panelW, height: panelH, fill: 0.82 }
+
   // Outer frame
-  const chassis = new THREE.Mesh(
-    new THREE.BoxGeometry(screenW + 0.06, screenH + 0.06, 0.05),
-    frame,
+  const chassis = markInteractive(
+    new THREE.Mesh(
+      new THREE.BoxGeometry(screenW + 0.06, screenH + 0.06, 0.05),
+      frame,
+    ),
   )
   chassis.position.set(0, screenY, 0)
   chassis.castShadow = true
   group.add(chassis)
 
-  const inset = new THREE.Mesh(
-    new THREE.BoxGeometry(screenW, screenH, 0.02),
-    bezel,
+  const inset = markInteractive(
+    new THREE.Mesh(new THREE.BoxGeometry(screenW, screenH, 0.02), bezel),
   )
   inset.position.set(0, screenY, 0.018)
   group.add(inset)
 
-  // Screen — subtle cool emissive so it reads as “on”
-  const screen = new THREE.Mesh(
-    new THREE.PlaneGeometry(screenW - 0.04, screenH - 0.04),
-    new THREE.MeshStandardMaterial({
-      color: 0x1a2838,
-      emissive: 0x3a6a8a,
-      emissiveIntensity: 0.35,
-      roughness: 0.25,
-      metalness: 0.15,
-    }),
+  const screen = markInteractive(
+    new THREE.Mesh(
+      new THREE.PlaneGeometry(panelW, panelH),
+      new THREE.MeshStandardMaterial({
+        color: 0x1a2838,
+        emissive: 0x3a6a8a,
+        emissiveIntensity: 0.22,
+        roughness: 0.35,
+        metalness: 0.12,
+      }),
+    ),
   )
   screen.position.set(0, screenY, 0.032)
-  screen.name = 'tvScreen'
+  screen.name = 'screen'
   group.add(screen)
 
   // Soft fill into the room (+Z local; group faces into room after Math.PI yaw)
@@ -75,14 +87,13 @@ export function createTV() {
   const consoleW = 1.65
   const consoleH = 0.4
   const consoleD = 0.38
-  const console = new THREE.Mesh(
-    new THREE.BoxGeometry(consoleW, consoleH, consoleD),
-    wood,
+  const mediaConsole = markInteractive(
+    new THREE.Mesh(new THREE.BoxGeometry(consoleW, consoleH, consoleD), wood),
   )
-  console.position.set(0, consoleH / 2, 0.14)
-  console.castShadow = true
-  console.receiveShadow = true
-  group.add(console)
+  mediaConsole.position.set(0, consoleH / 2, 0.14)
+  mediaConsole.castShadow = true
+  mediaConsole.receiveShadow = true
+  group.add(mediaConsole)
 
   // Slim drawer line
   const drawer = new THREE.Mesh(
@@ -102,9 +113,11 @@ export function createTV() {
   }
 
   // Soundbar
-  const bar = new THREE.Mesh(
-    new THREE.BoxGeometry(1.25, 0.055, 0.09),
-    mat(0x1e2022, { roughness: 0.45, metalness: 0.3 }),
+  const bar = markInteractive(
+    new THREE.Mesh(
+      new THREE.BoxGeometry(1.25, 0.055, 0.09),
+      mat(0x1e2022, { roughness: 0.45, metalness: 0.3 }),
+    ),
   )
   bar.position.set(0, consoleH + 0.04, 0.14 + consoleD / 2 - 0.02)
   bar.castShadow = true
@@ -240,10 +253,12 @@ function createXboxSeriesX() {
   return xbox
 }
 
-export function updateTV(tv, elapsed) {
-  const screen = tv.userData.tvScreen ?? tv.getObjectByName('tvScreen')
+export function updateTV(tv, elapsed, { focused = false } = {}) {
+  const screen = tv.userData.tvScreen ?? tv.getObjectByName('screen')
   tv.userData.tvScreen = screen
   if (screen?.material) {
-    screen.material.emissiveIntensity = 0.32 + Math.sin(elapsed * 0.7) * 0.04
+    screen.material.emissiveIntensity = focused
+      ? 0.32
+      : 0.2 + Math.sin(elapsed * 0.7) * 0.035
   }
 }

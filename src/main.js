@@ -30,6 +30,7 @@ import { createHoverHighlight } from './interaction/hoverHighlight.js'
 import {
   createCSS3DRenderer,
   createPortfolioScreen,
+  createMobileResumeSheet,
   updatePortfolioVisibility,
 } from './ui/portfolioScreen.js'
 import {
@@ -42,6 +43,7 @@ import {
   updatePoopyHoochVisibility,
   POOPYHOOCH_URL,
 } from './ui/poopyhoochScreen.js'
+import { createTvNewsScreen } from './ui/tvNewsScreen.js'
 import { createFocusHelper } from './ui/focusHelper.js'
 import { createFocusClose } from './ui/focusClose.js'
 import { createLoadingScreen } from './ui/loadingScreen.js'
@@ -234,10 +236,12 @@ instrumentsReady.catch((err) => console.warn('Bass model failed to load', err))
 
 const portfolioUi = createPortfolioScreen(monitor)
 portfolioUi.preload()
+const mobileResumeSheet = isTouchExplore ? createMobileResumeSheet(app) : null
 const earwormsUi = createEarwormsScreen(turntable)
 earwormsUi.preload()
 const poopyUi = createPoopyHoochScreen(bathroom)
 poopyUi.preload()
+const tvNewsUi = createTvNewsScreen(tv)
 const focusHelper = createFocusHelper(app)
 const focusClose = createFocusClose(exitBtn)
 const rig = createCameraRig(camera, controls)
@@ -251,6 +255,7 @@ const aboutScreen = dining.getObjectByName('screen')
 const photoShelf = wallArt.getObjectByName('photoShelf')
 const photoScreen = photoShelf.getObjectByName('screen')
 const dogScreen = dog.getObjectByName('screen')
+const tvScreen = tv.getObjectByName('screen')
 
 const raycaster = new THREE.Raycaster()
 const pointer = new THREE.Vector2()
@@ -264,6 +269,7 @@ const interactiveRoots = {
   about: dining,
   photo: photoShelf,
   dog,
+  tv,
   lightSwitch,
 }
 let activeFocus = null
@@ -304,6 +310,7 @@ function openPortfolio() {
   hoverHighlight.clear()
   activeFocus = 'portfolio'
   portfolioUi.show()
+  mobileResumeSheet?.show()
   const size = { width: 0.85, height: 0.48, fill: 0.78 }
   focusClose.show({ anchor: monitorScreen, width: size.width, height: size.height })
   rig.enterFocus(monitorScreen, size)
@@ -419,6 +426,20 @@ function openDog() {
   setHint("Who's a good boy…")
 }
 
+function openTvNews() {
+  if (FREE_CAMERA || rig.isBusy || rig.isFocused) return
+  hoverHighlight.clear()
+  activeFocus = 'tv'
+  tvNewsUi.show()
+  focusClose.show({
+    anchor: tvScreen,
+    width: tvNewsUi.screenSize.width,
+    height: tvNewsUi.screenSize.height,
+  })
+  rig.enterFocus(tvScreen, tvNewsUi.screenSize)
+  setHint('Watching the news…')
+}
+
 function closeFocus() {
   if (rig.isBusy || rig.mode === 'explore' || rig.mode === 'toExplore') return
   setPortfolioInteractive(false)
@@ -427,9 +448,13 @@ function closeFocus() {
   setFocusedUi(false)
   focusHelper.hide()
   focusClose.hide()
-  if (activeFocus === 'portfolio') portfolioUi.hide()
+  if (activeFocus === 'portfolio') {
+    portfolioUi.hide()
+    mobileResumeSheet?.hide()
+  }
   if (activeFocus === 'earworms') earwormsUi.hide()
   if (activeFocus === 'poopyhooch') poopyUi.hide()
+  if (activeFocus === 'tv') tvNewsUi.hide()
   activeFocus = null
   rig.exitFocus()
   setHint(EXPLORE_HINT)
@@ -441,7 +466,17 @@ function pickInteractive(clientX, clientY) {
   raycaster.setFromCamera(pointer, camera)
 
   const hits = raycaster.intersectObjects(
-    [monitor, turntable, bathroom, creditsPlaque, dining, photoShelf, dog, lightSwitch],
+    [
+      monitor,
+      turntable,
+      bathroom,
+      creditsPlaque,
+      dining,
+      photoShelf,
+      dog,
+      tv,
+      lightSwitch,
+    ],
     true,
   )
   for (const hit of hits) {
@@ -454,6 +489,7 @@ function pickInteractive(clientX, clientY) {
       kind === 'about' ||
       kind === 'photo' ||
       kind === 'dog' ||
+      kind === 'tv' ||
       kind === 'lightSwitch'
     ) {
       return kind
@@ -499,6 +535,9 @@ canvas.addEventListener('pointerdown', (event) => {
   } else if (kind === 'dog') {
     event.preventDefault()
     openDog()
+  } else if (kind === 'tv') {
+    event.preventDefault()
+    openTvNews()
   } else if (kind === 'lightSwitch') {
     event.preventDefault()
     if (FREE_CAMERA || rig.isBusy || rig.isFocused) return
@@ -548,7 +587,7 @@ function tick(timestamp) {
     if (mode === 'focused') {
       setFocusedUi(true)
       if (activeFocus === 'portfolio') {
-        setPortfolioInteractive(true)
+        if (!mobileResumeSheet) setPortfolioInteractive(true)
         setHint('Esc to leave')
       } else if (activeFocus === 'earworms') {
         setEarwormsInteractive(true)
@@ -564,6 +603,8 @@ function tick(timestamp) {
         setHint('Esc to leave')
       } else if (activeFocus === 'dog') {
         setHint('Esc to leave')
+      } else if (activeFocus === 'tv') {
+        setHint('Esc to leave')
       }
     } else if (mode === 'explore') {
       setPortfolioInteractive(false)
@@ -571,6 +612,7 @@ function tick(timestamp) {
       setPoopyInteractive(false)
       setFocusedUi(false)
       focusHelper.hide()
+      mobileResumeSheet?.hide()
       setHint(EXPLORE_HINT)
     }
     prevMode = mode
@@ -578,7 +620,9 @@ function tick(timestamp) {
 
   const focusing = rig.isFocused || mode === 'toFocus'
   if (isTouchExplore && !rig.isFocused && !rig.isBusy) {
-    const pulseIntensity = 0.1 + Math.sin(elapsed * 2.2) * 0.08
+    // Breathe 0 → subtle so materials stay readable between beats
+    const wave = 0.5 + 0.5 * Math.sin(elapsed * 1.6)
+    const pulseIntensity = wave * wave * 0.045
     hoverHighlight.pulse(Object.values(interactiveRoots), pulseIntensity)
   } else {
     hoverHighlight.clearPulse()
@@ -597,11 +641,15 @@ function tick(timestamp) {
   updateCreditsPlaque(creditsPlaque, elapsed, {
     focused: focusing && activeFocus === 'credits',
   })
-  updateTV(tv, elapsed)
+  updateTV(tv, elapsed, {
+    focused: focusing && activeFocus === 'tv',
+  })
+  tvNewsUi.update(elapsed, delta)
   // CSS3D ignores WebGL depth — keep overlays off while the camera is moving so
   // room objects (lamps, furniture) correctly occlude the WebGL stand-ins.
   updatePortfolioVisibility(portfolioUi, camera, monitorScreen, {
-    active: rig.isFocused && activeFocus === 'portfolio',
+    active:
+      rig.isFocused && activeFocus === 'portfolio' && !mobileResumeSheet,
   })
   updateEarwormsVisibility(earwormsUi, camera, earwormsScreen, {
     active: rig.isFocused && activeFocus === 'earworms',

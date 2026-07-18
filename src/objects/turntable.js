@@ -377,11 +377,11 @@ function createSpeaker() {
   const w = 0.2
   const h = 0.34
   const d = 0.22
-  const cabMat = wood(0x3a2818)
-  const baffleMat = plastic(0x1a1a1c, { roughness: 0.85 })
-  const coneMat = plastic(0x2a2420, { roughness: 0.7 })
-  const dustMat = plastic(0x4a4038, { roughness: 0.9 })
-  const trimMat = plastic(0xb8b4ae, { metalness: 0.7, roughness: 0.35 })
+  const cabMat = plastic(0x0e0e10, { roughness: 0.88 })
+  const baffleMat = plastic(0x121214, { roughness: 0.85 })
+  const coneMat = plastic(0xb87333, { roughness: 0.45, metalness: 0.55 })
+  const dustMat = plastic(0x8a5a28, { roughness: 0.5, metalness: 0.4 })
+  const trimMat = plastic(0x2a2a2e, { metalness: 0.35, roughness: 0.45 })
 
   const cab = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), cabMat)
   cab.position.y = h / 2
@@ -423,7 +423,7 @@ function createSpeaker() {
 
   const tweeter = new THREE.Mesh(
     new THREE.SphereGeometry(0.016, 12, 10, 0, Math.PI * 2, 0, Math.PI * 0.55),
-    plastic(0xd8d4ce, { metalness: 0.4, roughness: 0.4 }),
+    plastic(0x3a3a40, { metalness: 0.35, roughness: 0.45 }),
   )
   tweeter.rotation.x = Math.PI / 2
   tweeter.position.set(0, h * 0.72, d / 2 + 0.018)

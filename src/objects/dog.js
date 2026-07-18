@@ -66,11 +66,27 @@ export function createDog() {
   group.name = 'dog'
 
   const dogMat = createDogMat()
+  dogMat.traverse((child) => {
+    if (child.isMesh) child.userData.interactive = 'dog'
+  })
   group.add(dogMat)
 
   const body = new THREE.Group()
   body.name = 'dogBody'
   group.add(body)
+
+  // Invisible focus target facing into the room (+Z)
+  const focus = new THREE.Mesh(
+    new THREE.PlaneGeometry(0.42, 0.4),
+    new THREE.MeshBasicMaterial({ visible: false }),
+  )
+  focus.name = 'screen'
+  focus.position.set(0, 0.22, 0.28)
+  focus.userData.interactive = 'dog'
+  focus.userData.skipHover = true
+  group.add(focus)
+
+  group.userData.screenSize = { width: 0.45, height: 0.42, fill: 0.58 }
 
   // Under the desk, on the mat, facing into the room (+Z)
   group.position.set(0.55, 0, -3.25)
@@ -88,6 +104,7 @@ export function createDog() {
           if (!child.isMesh) return
           child.castShadow = true
           child.receiveShadow = false
+          child.userData.interactive = 'dog'
           if (child.material) {
             const mats = Array.isArray(child.material)
               ? child.material
@@ -125,12 +142,4 @@ export function createDog() {
   })
 
   return { group, ready }
-}
-
-export function updateDog(dog, elapsed) {
-  const body = dog.userData.dogBody ?? dog.getObjectByName('dogBody')
-  dog.userData.dogBody = body
-  if (!body) return
-  body.position.y = Math.sin(elapsed * 1.2) * 0.004
-  body.rotation.y = Math.sin(elapsed * 0.5) * 0.03
 }

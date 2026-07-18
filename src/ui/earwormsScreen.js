@@ -25,8 +25,8 @@ export function createEarwormsScreen(turntable) {
     <div class="earworms-frame">
       <div class="earworms-viewport">
         <div class="earworms-placeholder">
-          <p class="earworms-placeholder__kicker">Now playing</p>
-          <p class="earworms-placeholder__copy">Click the turntable to drop the needle</p>
+          <p class="earworms-placeholder__kicker">Earworms</p>
+          <p class="earworms-placeholder__copy">Cueing up a record…</p>
         </div>
         <iframe
           class="earworms-iframe"

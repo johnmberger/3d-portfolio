@@ -47,7 +47,13 @@ export function createFocusHelper(parent = document.getElementById('app')) {
     width = 0.4,
   }) {
     titleEl.textContent = title
-    blurbEl.textContent = blurb
+    if (blurb) {
+      blurbEl.textContent = blurb
+      blurbEl.hidden = false
+    } else {
+      blurbEl.textContent = ''
+      blurbEl.hidden = true
+    }
 
     if (role) {
       roleEl.textContent = role

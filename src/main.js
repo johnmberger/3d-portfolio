@@ -10,7 +10,7 @@ import { createDiningTable } from './objects/dining.js'
 import { createTurntable, updateTurntable } from './objects/turntable.js'
 import { createFloorLamp, updateFloorLamp } from './objects/lamp.js'
 import { createRug } from './objects/rug.js'
-import { createDog, updateDog } from './objects/dog.js'
+import { createDog } from './objects/dog.js'
 import { createWallArt } from './objects/wallArt.js'
 import { createBathroom, updateBathroom } from './objects/bathroom.js'
 import { createCreditsPlaque, updateCreditsPlaque, CREDITS_ENTRIES } from './objects/credits.js'
@@ -230,6 +230,7 @@ const creditsScreen = creditsPlaque.getObjectByName('screen')
 const aboutScreen = dining.getObjectByName('screen')
 const photoShelf = wallArt.getObjectByName('photoShelf')
 const photoScreen = photoShelf.getObjectByName('screen')
+const dogScreen = dog.getObjectByName('screen')
 
 const raycaster = new THREE.Raycaster()
 const pointer = new THREE.Vector2()
@@ -242,6 +243,7 @@ const interactiveRoots = {
   credits: creditsPlaque,
   about: dining,
   photo: photoShelf,
+  dog,
 }
 let activeFocus = null
 let prevMode = 'explore'
@@ -377,6 +379,25 @@ function openPhoto() {
   setHint('Looking closer…')
 }
 
+function openDog() {
+  if (FREE_CAMERA || rig.isBusy || rig.isFocused) return
+  hoverHighlight.clear()
+  activeFocus = 'dog'
+  const size = dog.userData.screenSize
+  focusHelper.show({
+    title: 'Good boy',
+    anchor: dogScreen,
+    width: size.width,
+  })
+  focusClose.show({
+    anchor: dogScreen,
+    width: size.width,
+    height: size.height,
+  })
+  rig.enterFocus(dogScreen, size)
+  setHint("Who's a good boy…")
+}
+
 function closeFocus() {
   if (rig.isBusy || rig.mode === 'explore' || rig.mode === 'toExplore') return
   setPortfolioInteractive(false)
@@ -399,7 +420,7 @@ function pickInteractive(clientX, clientY) {
   raycaster.setFromCamera(pointer, camera)
 
   const hits = raycaster.intersectObjects(
-    [monitor, turntable, bathroom, creditsPlaque, dining, photoShelf],
+    [monitor, turntable, bathroom, creditsPlaque, dining, photoShelf, dog],
     true,
   )
   for (const hit of hits) {
@@ -410,7 +431,8 @@ function pickInteractive(clientX, clientY) {
       kind === 'bathroom' ||
       kind === 'credits' ||
       kind === 'about' ||
-      kind === 'photo'
+      kind === 'photo' ||
+      kind === 'dog'
     ) {
       return kind
     }
@@ -452,6 +474,9 @@ canvas.addEventListener('pointerdown', (event) => {
   } else if (kind === 'photo') {
     event.preventDefault()
     openPhoto()
+  } else if (kind === 'dog') {
+    event.preventDefault()
+    openDog()
   }
 })
 
@@ -485,7 +510,6 @@ function tick(timestamp) {
   const delta = timer.getDelta()
 
   updatePlants(plants, elapsed)
-  updateDog(dog, elapsed)
   updateCandle(roundCoffee, elapsed, delta)
   updateWindowParallax(room, camera)
   const mode = rig.update(delta)
@@ -506,6 +530,8 @@ function tick(timestamp) {
       } else if (activeFocus === 'about') {
         setHint('Esc to leave')
       } else if (activeFocus === 'photo') {
+        setHint('Esc to leave')
+      } else if (activeFocus === 'dog') {
         setHint('Esc to leave')
       }
     } else if (mode === 'explore') {

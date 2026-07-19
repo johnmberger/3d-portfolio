@@ -1,4 +1,8 @@
-import { createIframeScreen, updateCss3dFacingVisibility } from './css3dScreen.js'
+import {
+  createIframeScreen,
+  createMobileIframeSheet,
+  updateCss3dFacingVisibility,
+} from './css3dScreen.js'
 
 const POOPYHOOCH_URL = 'https://www.poopthehooch.com'
 export { POOPYHOOCH_URL }
@@ -26,6 +30,18 @@ export function createPoopyHoochScreen(bathroom) {
     placeholderKicker: 'Poop the Hooch',
     placeholderCopy: 'Checking the water…',
     screenSize: { width: WORLD_W, height: WORLD_H, fill: 0.72, minDistance: 2.6 },
+  })
+}
+
+/** Flat panel for touch — CSS3D iframes crash mobile Safari. */
+export function createMobilePoopyHoochSheet(parent = document.getElementById('app')) {
+  return createMobileIframeSheet({
+    url: POOPYHOOCH_URL,
+    title: 'Poop the Hooch',
+    ariaLabel: 'Poop the Hooch',
+    className: 'mobile-sheet--poopy',
+    iframeAllow: 'autoplay; encrypted-media',
+    parent,
   })
 }
 

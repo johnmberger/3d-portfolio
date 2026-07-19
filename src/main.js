@@ -36,11 +36,13 @@ import {
 } from './ui/portfolioScreen.js'
 import {
   createEarwormsScreen,
+  createMobileEarwormsSheet,
   updateEarwormsVisibility,
   EARWORMS_URL,
 } from './ui/earwormsScreen.js'
 import {
   createPoopyHoochScreen,
+  createMobilePoopyHoochSheet,
   updatePoopyHoochVisibility,
   POOPYHOOCH_URL,
 } from './ui/poopyhoochScreen.js'
@@ -254,6 +256,8 @@ const TV_TICKER_NEAR = 4.2
 
 const portfolioUi = createPortfolioScreen(monitor)
 const mobileResumeSheet = isTouchExplore ? createMobileResumeSheet(app) : null
+const mobileEarwormsSheet = isTouchExplore ? createMobileEarwormsSheet(app) : null
+const mobilePoopySheet = isTouchExplore ? createMobilePoopyHoochSheet(app) : null
 const earwormsUi = createEarwormsScreen(turntable)
 const poopyUi = createPoopyHoochScreen(bathroom)
 const tvNewsUi = createTvNewsScreen(tv, { lowRes: isMobile })
@@ -383,8 +387,14 @@ function endFocusUi() {
     portfolioUi.hide()
     mobileResumeSheet?.hide()
   }
-  if (activeFocus === 'earworms') earwormsUi.hide()
-  if (activeFocus === 'poopyhooch') poopyUi.hide()
+  if (activeFocus === 'earworms') {
+    earwormsUi.hide()
+    mobileEarwormsSheet?.hide()
+  }
+  if (activeFocus === 'poopyhooch') {
+    poopyUi.hide()
+    mobilePoopySheet?.hide()
+  }
   if (activeFocus === 'tv') tvNewsUi.hide()
   activeFocus = null
 }
@@ -429,7 +439,8 @@ function focusEarworms() {
     id: 'earworms',
     screen: earwormsScreen,
     size: earwormsUi.screenSize,
-    ui: earwormsUi,
+    // CSS3D iframes crash mobile Safari — load into a flat sheet instead
+    ui: mobileEarwormsSheet ? null : earwormsUi,
     helper: {
       title: 'Earworms',
       blurb: "What I've been listening to lately.",
@@ -446,7 +457,7 @@ function focusPoopyHooch() {
     id: 'poopyhooch',
     screen: bathroomScreen,
     size: poopyUi.screenSize,
-    ui: poopyUi,
+    ui: mobilePoopySheet ? null : poopyUi,
     helper: {
       title: 'Poop the Hooch',
       blurb: 'Is the Chattahoochee Poopy?',
@@ -559,9 +570,11 @@ function handleFocusModeTransition(mode) {
         mobileResumeSheet?.show()
         if (!mobileResumeSheet) setScreenInteractive(portfolioUi, true)
       } else if (activeFocus === 'earworms') {
-        setScreenInteractive(earwormsUi, true)
+        mobileEarwormsSheet?.show()
+        if (!mobileEarwormsSheet) setScreenInteractive(earwormsUi, true)
       } else if (activeFocus === 'poopyhooch') {
-        setScreenInteractive(poopyUi, true)
+        mobilePoopySheet?.show()
+        if (!mobilePoopySheet) setScreenInteractive(poopyUi, true)
       }
       if (activeFocus) setHint(LEAVE_HINT)
     }
@@ -574,6 +587,8 @@ function handleFocusModeTransition(mode) {
     setFocusedUi(false)
     clearFocusChrome()
     mobileResumeSheet?.hide()
+    mobileEarwormsSheet?.hide()
+    mobilePoopySheet?.hide()
     setHint(EXPLORE_HINT)
     pendingCloseFocus = false
   }
@@ -751,10 +766,10 @@ function tick(timestamp) {
       rig.isFocused && activeFocus === 'portfolio' && !mobileResumeSheet,
   })
   updateEarwormsVisibility(earwormsUi, camera, earwormsScreen, {
-    active: rig.isFocused && activeFocus === 'earworms',
+    active: rig.isFocused && activeFocus === 'earworms' && !mobileEarwormsSheet,
   })
   updatePoopyHoochVisibility(poopyUi, camera, bathroomScreen, {
-    active: rig.isFocused && activeFocus === 'poopyhooch',
+    active: rig.isFocused && activeFocus === 'poopyhooch' && !mobilePoopySheet,
   })
 
   if (controls.enabled) controls.update()
@@ -779,8 +794,10 @@ function tick(timestamp) {
       await loading.finishWhenReady()
       // Warm iframes + bike after the room is up so they don't fight first paint
       portfolioUi.preload()
-      earwormsUi.preload()
-      poopyUi.preload()
+      if (!isTouchExplore) {
+        earwormsUi.preload()
+        poopyUi.preload()
+      }
       startBikeLoad()
     })
   }

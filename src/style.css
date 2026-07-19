@@ -578,7 +578,7 @@ body.is-focused #webgl {
 }
 
 /* Flat résumé sheet — mobile/touch (CSS3D iframes can't scroll on iOS) */
-.resume-sheet {
+.mobile-sheet {
   position: fixed;
   z-index: 4;
   left: 50%;
@@ -596,17 +596,33 @@ body.is-focused #webgl {
   -webkit-overflow-scrolling: touch;
 }
 
-.resume-sheet[hidden] {
+.mobile-sheet[hidden] {
   display: none;
 }
 
-.resume-sheet__iframe {
+.mobile-sheet__iframe {
   display: block;
   width: 100%;
   height: 100%;
   border: 0;
   background: var(--screen-bg);
   touch-action: pan-x pan-y;
+}
+
+.mobile-sheet--earworms {
+  background: #0c1018;
+}
+
+.mobile-sheet--earworms .mobile-sheet__iframe {
+  background: #0c1018;
+}
+
+.mobile-sheet--poopy {
+  background: #14181c;
+}
+
+.mobile-sheet--poopy .mobile-sheet__iframe {
+  background: #14181c;
 }
 
 body.is-pointer canvas,

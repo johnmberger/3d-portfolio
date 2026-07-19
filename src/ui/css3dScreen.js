@@ -175,3 +175,48 @@ export function createCSS3DRenderer(container) {
   container.appendChild(cssRenderer.domElement)
   return cssRenderer
 }
+
+/**
+ * Flat fullscreen-ish iframe panel for touch devices.
+ * CSS3D iframes crash / refuse to scroll on mobile Safari.
+ */
+export function createMobileIframeSheet({
+  url,
+  title,
+  ariaLabel,
+  className = '',
+  iframeAllow = '',
+  parent = document.getElementById('app'),
+}) {
+  const sheet = document.createElement('div')
+  sheet.className = `mobile-sheet ${className}`.trim()
+  sheet.hidden = true
+  sheet.setAttribute('role', 'dialog')
+  sheet.setAttribute('aria-label', ariaLabel || title)
+  const allowAttr = iframeAllow ? ` allow="${iframeAllow}"` : ''
+  sheet.innerHTML = `
+    <iframe
+      class="mobile-sheet__iframe"
+      title="${title}"
+      referrerpolicy="no-referrer-when-downgrade"${allowAttr}
+    ></iframe>
+  `
+  parent.appendChild(sheet)
+
+  const iframe = sheet.querySelector('.mobile-sheet__iframe')
+  let started = false
+
+  function show() {
+    if (!started) {
+      started = true
+      iframe.src = url
+    }
+    sheet.hidden = false
+  }
+
+  function hide() {
+    sheet.hidden = true
+  }
+
+  return { element: sheet, show, hide }
+}

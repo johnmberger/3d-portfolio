@@ -1,4 +1,8 @@
-import { createIframeScreen, updateCss3dFacingVisibility } from './css3dScreen.js'
+import {
+  createIframeScreen,
+  createMobileIframeSheet,
+  updateCss3dFacingVisibility,
+} from './css3dScreen.js'
 
 const EARWORMS_URL = 'https://earworms.johnberger.dev'
 export { EARWORMS_URL }
@@ -25,6 +29,18 @@ export function createEarwormsScreen(turntable) {
     placeholderKicker: 'Earworms',
     placeholderCopy: 'Cueing up a record…',
     screenSize: { width: 0.4, height: 0.4, fill: 0.7 },
+  })
+}
+
+/** Flat panel for touch — CSS3D iframes crash mobile Safari. */
+export function createMobileEarwormsSheet(parent = document.getElementById('app')) {
+  return createMobileIframeSheet({
+    url: EARWORMS_URL,
+    title: 'Earworms',
+    ariaLabel: 'Earworms',
+    className: 'mobile-sheet--earworms',
+    iframeAllow: 'autoplay; encrypted-media',
+    parent,
   })
 }
 

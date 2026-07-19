@@ -1,6 +1,7 @@
 import { RESUME_URL } from '../resumeUrl.js'
 import {
   createIframeScreen,
+  createMobileIframeSheet,
   updateCss3dFacingVisibility,
   createCSS3DRenderer,
 } from './css3dScreen.js'
@@ -33,40 +34,15 @@ export function createPortfolioScreen(monitor) {
   })
 }
 
-/**
- * Flat scrollable résumé panel for touch — CSS3D iframes don't scroll reliably on mobile.
- */
+/** Flat scrollable résumé panel for touch — CSS3D iframes crash / don't scroll on mobile. */
 export function createMobileResumeSheet(parent = document.getElementById('app')) {
-  const sheet = document.createElement('div')
-  sheet.className = 'resume-sheet'
-  sheet.hidden = true
-  sheet.setAttribute('role', 'dialog')
-  sheet.setAttribute('aria-label', 'Résumé')
-  sheet.innerHTML = `
-    <iframe
-      class="resume-sheet__iframe"
-      title="John Berger — Résumé"
-      referrerpolicy="no-referrer-when-downgrade"
-    ></iframe>
-  `
-  parent.appendChild(sheet)
-
-  const iframe = sheet.querySelector('.resume-sheet__iframe')
-  let started = false
-
-  function show() {
-    if (!started) {
-      started = true
-      iframe.src = RESUME_URL
-    }
-    sheet.hidden = false
-  }
-
-  function hide() {
-    sheet.hidden = true
-  }
-
-  return { element: sheet, show, hide }
+  return createMobileIframeSheet({
+    url: RESUME_URL,
+    title: 'John Berger — Résumé',
+    ariaLabel: 'Résumé',
+    className: 'mobile-sheet--resume',
+    parent,
+  })
 }
 
 export function updatePortfolioVisibility(ui, camera, screenMesh, opts) {

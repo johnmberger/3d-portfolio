@@ -96,9 +96,6 @@ const scene = new THREE.Scene()
 scene.background = new THREE.Color(0xd4c4b0)
 scene.fog = new THREE.Fog(0xd4c4b0, 9, 20)
 
-// TEMP: set true to unlock orbit limits and disable screen focus
-const FREE_CAMERA = false
-
 const camera = new THREE.PerspectiveCamera(
   48,
   window.innerWidth / window.innerHeight,
@@ -113,19 +110,12 @@ controls.target.set(0.85, 1.0, -0.55)
 controls.enableDamping = true
 controls.dampingFactor = 0.06
 controls.enablePan = !isTouchExplore
-controls.panSpeed = FREE_CAMERA ? 1.2 : 0.6
+controls.panSpeed = 0.6
 controls.screenSpacePanning = true
-if (FREE_CAMERA) {
-  controls.minDistance = 0.05
-  controls.maxDistance = 40
-  controls.minPolarAngle = 0
-  controls.maxPolarAngle = Math.PI
-} else {
-  controls.minDistance = isTouchExplore ? 2.2 : 1.8
-  controls.maxDistance = 9
-  controls.minPolarAngle = 0.15
-  controls.maxPolarAngle = Math.PI / 2 - 0.08
-}
+controls.minDistance = isTouchExplore ? 2.2 : 1.8
+controls.maxDistance = 9
+controls.minPolarAngle = 0.15
+controls.maxPolarAngle = Math.PI / 2 - 0.08
 controls.update()
 
 const ambient = new THREE.AmbientLight(0xe8d5c4, 0.35)
@@ -324,19 +314,10 @@ function setDragging(on) {
   document.body.classList.toggle('is-dragging', on)
 }
 
-function setPortfolioInteractive(on) {
-  portfolioUi.element.classList.toggle('is-interactive', on)
-  portfolioUi.element.style.pointerEvents = on ? 'auto' : 'none'
-}
-
-function setEarwormsInteractive(on) {
-  earwormsUi.element.classList.toggle('is-interactive', on)
-  earwormsUi.element.style.pointerEvents = on ? 'auto' : 'none'
-}
-
-function setPoopyInteractive(on) {
-  poopyUi.element.classList.toggle('is-interactive', on)
-  poopyUi.element.style.pointerEvents = on ? 'auto' : 'none'
+function setScreenInteractive(ui, on) {
+  if (!ui?.element) return
+  ui.element.classList.toggle('is-interactive', on)
+  ui.element.style.pointerEvents = on ? 'auto' : 'none'
 }
 
 function setFocusedUi(on) {
@@ -374,163 +355,38 @@ function clearFocusChrome() {
   focusClose.hide()
 }
 
-function openPortfolio() {
-  if (FREE_CAMERA || rig.isBusy || rig.isFocused) return
+function beginFocus({ id, screen, size, ui = null, helper = null, hint }) {
+  if (rig.isBusy || rig.isFocused) return
   hoverHighlight.clear()
-  activeFocus = 'portfolio'
-  portfolioUi.show()
-  const size = {
-    ...(monitor.userData.screenSize ?? { width: 0.85, height: 0.48 }),
-    fill: 0.86,
+  activeFocus = id
+  ui?.show()
+  queueFocusChrome({
+    helper,
+    close: {
+      anchor: screen,
+      width: size.width,
+      height: size.height,
+    },
+  })
+  rig.enterFocus(screen, size)
+  setHint(hint)
+}
+
+function endFocusUi() {
+  pendingCloseFocus = false
+  setScreenInteractive(portfolioUi, false)
+  setScreenInteractive(earwormsUi, false)
+  setScreenInteractive(poopyUi, false)
+  setFocusedUi(false)
+  clearFocusChrome()
+  if (activeFocus === 'portfolio') {
+    portfolioUi.hide()
+    mobileResumeSheet?.hide()
   }
-  queueFocusChrome({
-    close: { anchor: monitorScreen, width: size.width, height: size.height },
-  })
-  rig.enterFocus(monitorScreen, size)
-  setHint('Reading the résumé…')
-}
-
-function openEarworms() {
-  if (FREE_CAMERA || rig.isBusy || rig.isFocused) return
-  hoverHighlight.clear()
-  activeFocus = 'earworms'
-  earwormsUi.show()
-  queueFocusChrome({
-    helper: {
-      title: 'Earworms',
-      blurb: "What I've been listening to lately.",
-      href: EARWORMS_URL,
-      anchor: earwormsScreen,
-      width: earwormsUi.screenSize.width,
-    },
-    close: {
-      anchor: earwormsScreen,
-      width: earwormsUi.screenSize.width,
-      height: earwormsUi.screenSize.height,
-    },
-  })
-  rig.enterFocus(earwormsScreen, earwormsUi.screenSize)
-  setHint('Dropping the needle…')
-}
-
-function openPoopyHooch() {
-  if (FREE_CAMERA || rig.isBusy || rig.isFocused) return
-  hoverHighlight.clear()
-  activeFocus = 'poopyhooch'
-  poopyUi.show()
-  queueFocusChrome({
-    helper: {
-      title: 'Poop the Hooch',
-      blurb: 'Is the Chattahoochee Poopy?',
-      href: POOPYHOOCH_URL,
-      anchor: bathroomScreen,
-      width: poopyUi.screenSize.width,
-    },
-    close: {
-      anchor: bathroomScreen,
-      width: poopyUi.screenSize.width,
-      height: poopyUi.screenSize.height,
-    },
-  })
-  rig.enterFocus(bathroomScreen, poopyUi.screenSize)
-  setHint('Checking the mirror…')
-}
-
-function openCredits() {
-  if (FREE_CAMERA || rig.isBusy || rig.isFocused) return
-  hoverHighlight.clear()
-  activeFocus = 'credits'
-  const size = {
-    ...creditsPlaque.userData.screenSize,
-    // Leave room for the top credits sheet on small screens
-    fill: isTouchExplore ? 0.58 : creditsPlaque.userData.screenSize.fill,
-  }
-  queueFocusChrome({
-    helper: {
-      title: 'Credits',
-      blurb: 'Models used in this room — open each for attribution.',
-      links: CREDITS_ENTRIES,
-      anchor: creditsScreen,
-      width: size.width,
-      dock: 'top',
-    },
-    close: {
-      anchor: creditsScreen,
-      width: size.width,
-      height: size.height,
-    },
-  })
-  rig.enterFocus(creditsScreen, size)
-  setHint('Reading the plaque…')
-}
-
-function openAbout() {
-  if (FREE_CAMERA || rig.isBusy || rig.isFocused) return
-  hoverHighlight.clear()
-  activeFocus = 'about'
-  const size = dining.userData.screenSize
-  queueFocusChrome({
-    close: {
-      anchor: aboutScreen,
-      width: size.width,
-      height: size.height,
-    },
-  })
-  rig.enterFocus(aboutScreen, size)
-  setHint('Reading the menu…')
-}
-
-function openPhoto() {
-  if (FREE_CAMERA || rig.isBusy || rig.isFocused) return
-  hoverHighlight.clear()
-  activeFocus = 'photo'
-  const size = photoShelf.userData.screenSize
-  queueFocusChrome({
-    close: {
-      anchor: photoScreen,
-      width: size.width,
-      height: size.height,
-    },
-  })
-  rig.enterFocus(photoScreen, size)
-  setHint('Looking closer…')
-}
-
-function openDog() {
-  if (FREE_CAMERA || rig.isBusy || rig.isFocused) return
-  hoverHighlight.clear()
-  activeFocus = 'dog'
-  const size = dog.userData.screenSize
-  queueFocusChrome({
-    helper: {
-      title: 'Good boy',
-      anchor: dogScreen,
-      width: size.width,
-    },
-    close: {
-      anchor: dogScreen,
-      width: size.width,
-      height: size.height,
-    },
-  })
-  rig.enterFocus(dogScreen, size)
-  setHint("Who's a good boy…")
-}
-
-function openTvNews() {
-  if (FREE_CAMERA || rig.isBusy || rig.isFocused) return
-  hoverHighlight.clear()
-  activeFocus = 'tv'
-  tvNewsUi.show()
-  queueFocusChrome({
-    close: {
-      anchor: tvScreen,
-      width: tvNewsUi.screenSize.width,
-      height: tvNewsUi.screenSize.height,
-    },
-  })
-  rig.enterFocus(tvScreen, tvNewsUi.screenSize)
-  setHint('Watching the news…')
+  if (activeFocus === 'earworms') earwormsUi.hide()
+  if (activeFocus === 'poopyhooch') poopyUi.hide()
+  if (activeFocus === 'tv') tvNewsUi.hide()
+  activeFocus = null
 }
 
 function closeFocus() {
@@ -541,65 +397,187 @@ function closeFocus() {
     pendingCloseFocus = true
     return
   }
-  pendingCloseFocus = false
-  setPortfolioInteractive(false)
-  setEarwormsInteractive(false)
-  setPoopyInteractive(false)
-  setFocusedUi(false)
-  clearFocusChrome()
-  if (activeFocus === 'portfolio') {
-    portfolioUi.hide()
-    mobileResumeSheet?.hide()
-  }
-  if (activeFocus === 'earworms') earwormsUi.hide()
-  if (activeFocus === 'poopyhooch') poopyUi.hide()
-  if (activeFocus === 'tv') tvNewsUi.hide()
-  activeFocus = null
+  endFocusUi()
   rig.exitFocus()
   setHint(EXPLORE_HINT)
 }
 
-function clearFocusUiForReset() {
-  pendingCloseFocus = false
-  setPortfolioInteractive(false)
-  setEarwormsInteractive(false)
-  setPoopyInteractive(false)
-  setFocusedUi(false)
-  clearFocusChrome()
-  if (activeFocus === 'portfolio') {
-    portfolioUi.hide()
-    mobileResumeSheet?.hide()
-  }
-  if (activeFocus === 'earworms') earwormsUi.hide()
-  if (activeFocus === 'poopyhooch') poopyUi.hide()
-  if (activeFocus === 'tv') tvNewsUi.hide()
-  activeFocus = null
-}
-
 function resetCameraView() {
-  if (FREE_CAMERA || rig.isBusy) return
-  clearFocusUiForReset()
+  if (rig.isBusy) return
+  endFocusUi()
   if (rig.resetView()) {
     setHint('Back to the room…')
   }
 }
 
+function focusPortfolio() {
+  const size = {
+    ...(monitor.userData.screenSize ?? { width: 0.85, height: 0.48 }),
+    fill: 0.86,
+  }
+  beginFocus({
+    id: 'portfolio',
+    screen: monitorScreen,
+    size,
+    ui: portfolioUi,
+    hint: 'Reading the résumé…',
+  })
+}
+
+function focusEarworms() {
+  beginFocus({
+    id: 'earworms',
+    screen: earwormsScreen,
+    size: earwormsUi.screenSize,
+    ui: earwormsUi,
+    helper: {
+      title: 'Earworms',
+      blurb: "What I've been listening to lately.",
+      href: EARWORMS_URL,
+      anchor: earwormsScreen,
+      width: earwormsUi.screenSize.width,
+    },
+    hint: 'Dropping the needle…',
+  })
+}
+
+function focusPoopyHooch() {
+  beginFocus({
+    id: 'poopyhooch',
+    screen: bathroomScreen,
+    size: poopyUi.screenSize,
+    ui: poopyUi,
+    helper: {
+      title: 'Poop the Hooch',
+      blurb: 'Is the Chattahoochee Poopy?',
+      href: POOPYHOOCH_URL,
+      anchor: bathroomScreen,
+      width: poopyUi.screenSize.width,
+    },
+    hint: 'Checking the mirror…',
+  })
+}
+
+function focusCredits() {
+  const size = {
+    ...creditsPlaque.userData.screenSize,
+    fill: isTouchExplore ? 0.58 : creditsPlaque.userData.screenSize.fill,
+  }
+  beginFocus({
+    id: 'credits',
+    screen: creditsScreen,
+    size,
+    helper: {
+      title: 'Credits',
+      blurb: 'Models used in this room — open each for attribution.',
+      links: CREDITS_ENTRIES,
+      anchor: creditsScreen,
+      width: size.width,
+      dock: 'top',
+    },
+    hint: 'Reading the plaque…',
+  })
+}
+
+function focusAbout() {
+  beginFocus({
+    id: 'about',
+    screen: aboutScreen,
+    size: dining.userData.screenSize,
+    hint: 'Reading the menu…',
+  })
+}
+
+function focusPhoto() {
+  beginFocus({
+    id: 'photo',
+    screen: photoScreen,
+    size: photoShelf.userData.screenSize,
+    hint: 'Looking closer…',
+  })
+}
+
+function focusDog() {
+  const size = dog.userData.screenSize
+  beginFocus({
+    id: 'dog',
+    screen: dogScreen,
+    size,
+    helper: {
+      title: 'Good boy',
+      anchor: dogScreen,
+      width: size.width,
+    },
+    hint: "Who's a good boy…",
+  })
+}
+
+function focusTvNews() {
+  beginFocus({
+    id: 'tv',
+    screen: tvScreen,
+    size: tvNewsUi.screenSize,
+    ui: tvNewsUi,
+    hint: 'Watching the news…',
+  })
+}
+
+const FOCUS_BY_KIND = {
+  monitor: focusPortfolio,
+  turntable: focusEarworms,
+  bathroom: focusPoopyHooch,
+  credits: focusCredits,
+  about: focusAbout,
+  photo: focusPhoto,
+  dog: focusDog,
+  tv: focusTvNews,
+}
+
+function toggleLightSwitch() {
+  if (rig.isBusy || rig.isFocused) return
+  timeOfDay.toggle()
+  updateLightSwitch(lightSwitch, { night: timeOfDay.isNight })
+  setHint(timeOfDay.isNight ? 'Lights down…' : 'Sunset mode…')
+}
+
 function openByKind(kind) {
   if (!kind) return
-  if (kind === 'monitor') openPortfolio()
-  else if (kind === 'turntable') openEarworms()
-  else if (kind === 'bathroom') openPoopyHooch()
-  else if (kind === 'credits') openCredits()
-  else if (kind === 'about') openAbout()
-  else if (kind === 'photo') openPhoto()
-  else if (kind === 'dog') openDog()
-  else if (kind === 'tv') openTvNews()
-  else if (kind === 'lightSwitch') {
-    if (FREE_CAMERA || rig.isBusy || rig.isFocused) return
-    timeOfDay.toggle()
-    updateLightSwitch(lightSwitch, { night: timeOfDay.isNight })
-    setHint(timeOfDay.isNight ? 'Lights down…' : 'Sunset mode…')
+  if (kind === 'lightSwitch') {
+    toggleLightSwitch()
+    return
   }
+  FOCUS_BY_KIND[kind]?.()
+}
+
+function handleFocusModeTransition(mode) {
+  if (mode === prevMode) return
+  if (mode === 'focused') {
+    if (!pendingCloseFocus) {
+      setFocusedUi(true)
+      revealFocusChrome()
+      if (activeFocus === 'portfolio') {
+        mobileResumeSheet?.show()
+        if (!mobileResumeSheet) setScreenInteractive(portfolioUi, true)
+      } else if (activeFocus === 'earworms') {
+        setScreenInteractive(earwormsUi, true)
+      } else if (activeFocus === 'poopyhooch') {
+        setScreenInteractive(poopyUi, true)
+      }
+      if (activeFocus) setHint(LEAVE_HINT)
+    }
+  } else if (mode === 'toExplore' || mode === 'toHome') {
+    clearFocusChrome()
+  } else if (mode === 'explore') {
+    setScreenInteractive(portfolioUi, false)
+    setScreenInteractive(earwormsUi, false)
+    setScreenInteractive(poopyUi, false)
+    setFocusedUi(false)
+    clearFocusChrome()
+    mobileResumeSheet?.hide()
+    setHint(EXPLORE_HINT)
+    pendingCloseFocus = false
+  }
+  prevMode = mode
 }
 
 function pickInteractive(clientX, clientY) {
@@ -607,33 +585,10 @@ function pickInteractive(clientX, clientY) {
   pointer.y = -(clientY / window.innerHeight) * 2 + 1
   raycaster.setFromCamera(pointer, camera)
 
-  const hits = raycaster.intersectObjects(
-    [
-      monitor,
-      turntable,
-      bathroom,
-      creditsPlaque,
-      dining,
-      photoShelf,
-      dog,
-      tv,
-      lightSwitch,
-    ],
-    true,
-  )
+  const hits = raycaster.intersectObjects(interactiveRootList, true)
   for (const hit of hits) {
     const kind = hit.object.userData.interactive
-    if (
-      kind === 'monitor' ||
-      kind === 'turntable' ||
-      kind === 'bathroom' ||
-      kind === 'credits' ||
-      kind === 'about' ||
-      kind === 'photo' ||
-      kind === 'dog' ||
-      kind === 'tv' ||
-      kind === 'lightSwitch'
-    ) {
+    if (kind && (kind in interactiveRoots || kind === 'lightSwitch')) {
       return kind
     }
   }
@@ -736,51 +691,7 @@ function tick(timestamp) {
   updateHangingPendant(plantPendant, { night })
   updateLightSwitch(lightSwitch, { night })
   const mode = rig.update(delta)
-  if (mode !== prevMode) {
-    if (mode === 'focused') {
-      if (pendingCloseFocus) {
-        // User bailed mid-zoom — skip chrome reveal
-      } else {
-        setFocusedUi(true)
-        revealFocusChrome()
-        if (activeFocus === 'portfolio') {
-          mobileResumeSheet?.show()
-          if (!mobileResumeSheet) setPortfolioInteractive(true)
-          setHint(LEAVE_HINT)
-        } else if (activeFocus === 'earworms') {
-          setEarwormsInteractive(true)
-          setHint(LEAVE_HINT)
-        } else if (activeFocus === 'poopyhooch') {
-          setPoopyInteractive(true)
-          setHint(LEAVE_HINT)
-        } else if (activeFocus === 'credits') {
-          setHint(LEAVE_HINT)
-        } else if (activeFocus === 'about') {
-          setHint(LEAVE_HINT)
-        } else if (activeFocus === 'photo') {
-          setHint(LEAVE_HINT)
-        } else if (activeFocus === 'dog') {
-          setHint(LEAVE_HINT)
-        } else if (activeFocus === 'tv') {
-          setHint(LEAVE_HINT)
-        }
-      }
-    } else if (mode === 'toExplore' || mode === 'toHome') {
-      clearFocusChrome()
-    } else if (mode === 'explore') {
-      setPortfolioInteractive(false)
-      setEarwormsInteractive(false)
-      setPoopyInteractive(false)
-      setFocusedUi(false)
-      clearFocusChrome()
-      mobileResumeSheet?.hide()
-      setHint(EXPLORE_HINT)
-      if (pendingCloseFocus) {
-        pendingCloseFocus = false
-      }
-    }
-    prevMode = mode
-  }
+  handleFocusModeTransition(mode)
 
   if (pendingCloseFocus && mode === 'focused') {
     closeFocus()
@@ -847,7 +758,7 @@ function tick(timestamp) {
   })
 
   if (controls.enabled) controls.update()
-  if (!FREE_CAMERA && !rig.isBusy && !rig.isFocused) {
+  if (!rig.isBusy && !rig.isFocused) {
     cameraBounds.clamp()
   }
   renderer.render(scene, camera)

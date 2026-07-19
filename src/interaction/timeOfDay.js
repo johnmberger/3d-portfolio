@@ -75,7 +75,6 @@ export function createTimeOfDay({
   windowGlow,
   windowRim,
   room,
-  button,
   windowRimScale = 1,
 }) {
   const textures = {
@@ -108,15 +107,6 @@ export function createTimeOfDay({
     target.copy(tmpColor)
   }
 
-  function setButton() {
-    // Optional HUD button (removed in favor of the wall switch)
-    if (!button) return
-    const next = mode === 'sunset' ? 'night' : 'sunset'
-    button.textContent = next === 'night' ? 'Night' : 'Sunset'
-    button.setAttribute('aria-label', `Switch to ${PRESETS[next].label}`)
-    button.dataset.mode = mode
-  }
-
   function toggle() {
     const next = mode === 'sunset' ? 'night' : 'sunset'
     from = PRESETS[mode]
@@ -124,7 +114,6 @@ export function createTimeOfDay({
     mode = next
     t = 0
     applySky(mode)
-    setButton()
     return mode
   }
 
@@ -167,7 +156,6 @@ export function createTimeOfDay({
   }
 
   applySky('sunset')
-  setButton()
 
   return {
     toggle,

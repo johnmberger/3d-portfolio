@@ -1,9 +1,9 @@
 import * as THREE from 'three'
 import { WALL_POS } from './roomConstants.js'
+import { markInteractive as mark } from './objectUtils.js'
 
 function markInteractive(mesh) {
-  mesh.userData.interactive = 'credits'
-  return mesh
+  return mark(mesh, 'credits')
 }
 
 /** Model attributions shown on the wall plaque (and in the focus helper). */

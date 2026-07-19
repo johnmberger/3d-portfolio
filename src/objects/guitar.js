@@ -1,17 +1,9 @@
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
+import { mat } from './objectUtils.js'
 import { WALL_POS } from './roomConstants.js'
 
 const BASS_URL = '/models/bass/bass.glb'
-
-function mat(color, props = {}) {
-  return new THREE.MeshStandardMaterial({
-    color,
-    roughness: 0.55,
-    metalness: 0.05,
-    ...props,
-  })
-}
 
 function createWallHanger() {
   const hanger = new THREE.Group()
@@ -446,9 +438,4 @@ export function createWallInstruments({ fillLight = true } = {}) {
   group.add(wallLight)
 
   return { group, ready: bassReady }
-}
-
-/** @deprecated use createWallInstruments */
-export function createGuitar() {
-  return createWallInstruments().group
 }

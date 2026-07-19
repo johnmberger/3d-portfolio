@@ -198,7 +198,3 @@ export function createBicycle({ defer = false } = {}) {
 
   return { group, ready, startLoad }
 }
-
-export function updateBicycle(_bike, _elapsed) {
-  // Mounted solid — no idle motion
-}

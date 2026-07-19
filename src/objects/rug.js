@@ -123,7 +123,8 @@ function createListeningRugTexture() {
   canvas.height = size
   const ctx = canvas.getContext('2d')
   const c = size / 2
-  const maxR = size * 0.48
+  // Fill to the UV rim of CircleGeometry (UV edge ≈ radius 0.5) so no floor shows through
+  const maxR = size * 0.5
 
   ctx.clearRect(0, 0, size, size)
 
@@ -210,17 +211,16 @@ function makeRoundRugMesh(diameter, texture, edgeColor = 0x4a3020) {
     map: texture,
     roughness: 0.95,
     metalness: 0,
-    transparent: true,
   })
 
-  const rug = new THREE.Mesh(new THREE.CircleGeometry(r, 48), mat)
+  const rug = new THREE.Mesh(new THREE.CircleGeometry(r, 64), mat)
   rug.rotation.x = -Math.PI / 2
   rug.position.y = 0.009
   rug.receiveShadow = true
   g.add(rug)
 
   const edge = new THREE.Mesh(
-    new THREE.RingGeometry(r, r + 0.04, 48),
+    new THREE.RingGeometry(r - 0.01, r + 0.045, 64),
     new THREE.MeshStandardMaterial({
       color: edgeColor,
       roughness: 1,

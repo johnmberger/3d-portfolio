@@ -401,10 +401,6 @@ body.is-focused #webgl {
     0 10px 26px rgba(70, 50, 30, 0.12);
 }
 
-/* —— Loading screen —— */
-
-/* —— Loading screen —— */
-
 /* —— Loading screen ——
    Layout/visuals must match the critical <style> in index.html.
    No entrance animations here — they would restart when this file loads and flash. */
@@ -471,43 +467,40 @@ body.is-focused #webgl {
   transition: transform 0.35s ease;
 }
 
-/* —— Portfolio / resume screen (CSS3D iframe on the monitor) —— */
+/* —— Shared CSS3D iframe screens —— */
 
-.portfolio-screen {
-  width: 850px;
-  height: 480px;
+.css3d-screen {
   overflow: hidden;
-  border-radius: 6px;
-  background: var(--screen-bg);
-  color: var(--screen-ink);
   font-family: "Source Sans 3", system-ui, sans-serif;
   pointer-events: none;
   user-select: none;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
 }
 
-.portfolio-screen.is-interactive {
+.css3d-screen.is-interactive {
   pointer-events: auto;
   user-select: auto;
   cursor: default;
 }
 
-.folio-frame {
+.css3d-frame {
   position: relative;
+  display: flex;
+  flex-direction: column;
   width: 100%;
   height: 100%;
 }
 
-.folio-viewport {
+.css3d-viewport {
   position: relative;
+  flex: 1;
+  min-height: 0;
   width: 100%;
   height: 100%;
-  background: var(--screen-bg);
 }
 
-.folio-placeholder {
+.css3d-placeholder {
   position: absolute;
   inset: 0;
   display: flex;
@@ -517,45 +510,71 @@ body.is-focused #webgl {
   gap: 8px;
   padding: 24px;
   text-align: center;
-  background: linear-gradient(160deg, #1a2420 0%, #0f1412 55%, #182018 100%);
   transition: opacity 0.3s ease;
 }
 
-.portfolio-screen.is-loaded .folio-placeholder {
+.css3d-screen.is-loaded .css3d-placeholder {
   opacity: 0;
   pointer-events: none;
 }
 
-.folio-placeholder__kicker {
+.css3d-placeholder__kicker {
   font-size: 12px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--screen-accent);
 }
 
-.folio-placeholder__copy {
+.css3d-placeholder__copy {
   font-size: 15px;
-  color: var(--screen-muted);
 }
 
-.folio-iframe {
+.css3d-iframe {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   border: 0;
-  background: var(--screen-bg);
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.35s ease;
 }
 
-.portfolio-screen.is-loaded .folio-iframe {
+.css3d-screen.is-loaded .css3d-iframe {
   opacity: 1;
 }
 
-.portfolio-screen.is-interactive.is-loaded .folio-iframe {
+.css3d-screen.is-interactive.is-loaded .css3d-iframe {
   pointer-events: auto;
+}
+
+/* Portfolio / resume (monitor) */
+.portfolio-screen {
+  width: 850px;
+  height: 480px;
+  border-radius: 6px;
+  background: var(--screen-bg);
+  color: var(--screen-ink);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.portfolio-screen .css3d-viewport {
+  background: var(--screen-bg);
+}
+
+.portfolio-screen .css3d-placeholder {
+  background: linear-gradient(160deg, #1a2420 0%, #0f1412 55%, #182018 100%);
+}
+
+.portfolio-screen .css3d-placeholder__kicker {
+  color: var(--screen-accent);
+}
+
+.portfolio-screen .css3d-placeholder__copy {
+  color: var(--screen-muted);
+}
+
+.portfolio-screen .css3d-iframe {
+  background: var(--screen-bg);
 }
 
 /* Flat résumé sheet — mobile/touch (CSS3D iframes can't scroll on iOS) */
@@ -595,19 +614,13 @@ body.is-pointer .css3d-layer {
   cursor: pointer;
 }
 
-/* —— Earworms screen (CSS3D on the upright record) —— */
-
+/* Earworms (upright record) */
 .earworms-screen {
   width: 800px;
   height: 800px;
-  overflow: hidden;
   border-radius: 3px;
   background: #0c1018;
   color: #e8eef4;
-  font-family: "Source Sans 3", system-ui, sans-serif;
-  pointer-events: none;
-  user-select: none;
-  /* CSS3D can't receive WebGL shadows — fake depth with rim + drop shadow */
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.08),
     inset 0 18px 40px rgba(0, 0, 0, 0.35),
@@ -615,47 +628,18 @@ body.is-pointer .css3d-layer {
     0 10px 28px rgba(0, 0, 0, 0.45),
     0 2px 6px rgba(0, 0, 0, 0.35);
   filter: drop-shadow(0 14px 18px rgba(0, 0, 0, 0.4));
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
 }
 
-.earworms-screen.is-interactive {
-  pointer-events: auto;
-  user-select: auto;
-  cursor: default;
-}
-
-.earworms-frame {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  height: 100%;
-}
-
-.earworms-viewport {
-  position: relative;
-  flex: 1;
-  min-height: 0;
+.earworms-screen .css3d-viewport {
   background: #0c1018;
 }
 
-.earworms-placeholder {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+.earworms-screen .css3d-placeholder {
   gap: 10px;
-  padding: 24px;
-  text-align: center;
-  background:
-    linear-gradient(160deg, #1a2838 0%, #0c1018 45%, #2a1a14 100%);
-  transition: opacity 0.3s ease;
+  background: linear-gradient(160deg, #1a2838 0%, #0c1018 45%, #2a1a14 100%);
 }
 
-.earworms-placeholder::before {
+.earworms-screen .css3d-placeholder::before {
   content: "";
   width: 42%;
   aspect-ratio: 1;
@@ -666,97 +650,39 @@ body.is-pointer .css3d-layer {
   margin-bottom: 8px;
 }
 
-.earworms-screen.is-loaded .earworms-placeholder {
-  opacity: 0;
-  pointer-events: none;
-}
-
-.earworms-placeholder__kicker {
-  font-size: 12px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+.earworms-screen .css3d-placeholder__kicker {
   color: #e8a05a;
 }
 
-.earworms-placeholder__copy {
+.earworms-screen .css3d-placeholder__copy {
   font-size: 16px;
   color: rgba(232, 238, 244, 0.55);
 }
 
-.earworms-iframe {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  border: 0;
+.earworms-screen .css3d-iframe {
   background: #0c1018;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.35s ease;
 }
 
-.earworms-screen.is-loaded .earworms-iframe {
-  opacity: 1;
-}
-
-.earworms-screen.is-interactive.is-loaded .earworms-iframe {
-  pointer-events: auto;
-}
-
-/* —— PoopyHooch screen (CSS3D on the bathroom mirror) —— */
-
+/* PoopyHooch (bathroom mirror) */
 .poopyhooch-screen {
   width: 850px;
   height: 1050px;
-  overflow: hidden;
   border-radius: 2px;
   background: #14181c;
   color: #e8eef4;
-  font-family: "Source Sans 3", system-ui, sans-serif;
-  pointer-events: none;
-  user-select: none;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
 }
 
-.poopyhooch-screen.is-interactive {
-  pointer-events: auto;
-  user-select: auto;
-  cursor: default;
-}
-
-.poopyhooch-frame {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  height: 100%;
-}
-
-.poopyhooch-viewport {
-  position: relative;
-  flex: 1;
-  min-height: 0;
+.poopyhooch-screen .css3d-viewport {
   background: #14181c;
 }
 
-.poopyhooch-placeholder {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+.poopyhooch-screen .css3d-placeholder {
   gap: 10px;
-  padding: 24px;
-  text-align: center;
-  background:
-    linear-gradient(165deg, #2a3238 0%, #14181c 50%, #1a2420 100%);
-  transition: opacity 0.3s ease;
+  background: linear-gradient(165deg, #2a3238 0%, #14181c 50%, #1a2420 100%);
 }
 
-.poopyhooch-placeholder::before {
+.poopyhooch-screen .css3d-placeholder::before {
   content: "";
   width: 36%;
   aspect-ratio: 1;
@@ -768,40 +694,16 @@ body.is-pointer .css3d-layer {
   margin-bottom: 8px;
 }
 
-.poopyhooch-screen.is-loaded .poopyhooch-placeholder {
-  opacity: 0;
-  pointer-events: none;
-}
-
-.poopyhooch-placeholder__kicker {
-  font-size: 12px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+.poopyhooch-screen .css3d-placeholder__kicker {
   color: #8fbf9a;
 }
 
-.poopyhooch-placeholder__copy {
+.poopyhooch-screen .css3d-placeholder__copy {
   font-size: 16px;
   color: rgba(232, 238, 244, 0.55);
 }
 
-.poopyhooch-iframe {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  border: 0;
+.poopyhooch-screen .css3d-iframe {
   background: #14181c;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.35s ease;
-}
-
-.poopyhooch-screen.is-loaded .poopyhooch-iframe {
-  opacity: 1;
-}
-
-.poopyhooch-screen.is-interactive.is-loaded .poopyhooch-iframe {
-  pointer-events: auto;
 }
 

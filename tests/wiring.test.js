@@ -13,6 +13,10 @@ describe('entry wiring', () => {
 
   it('wires the interactive hotspots in main', () => {
     const main = readFileSync(resolve(root, 'src/main.js'), 'utf8')
+    expect(main).toContain('FOCUS_BY_KIND')
+    expect(main).toContain('focusTvNews')
+    expect(main).toContain('beginFocus')
+    expect(main).toContain('createMobileResumeSheet')
     for (const kind of [
       'monitor',
       'turntable',
@@ -24,10 +28,8 @@ describe('entry wiring', () => {
       'tv',
       'lightSwitch',
     ]) {
-      expect(main).toContain(`'${kind}'`)
+      expect(main).toMatch(new RegExp(`\\b${kind}\\b`))
     }
-    expect(main).toContain('openTvNews')
-    expect(main).toContain('createMobileResumeSheet')
   })
 
   it('uses www canonical and OG URLs in index.html', () => {

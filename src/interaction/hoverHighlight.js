@@ -67,7 +67,7 @@ export function createHoverHighlight({ color = 0x8fbf9a, boost = 0.28 } = {}) {
           m.emissive.setHex(saved.color)
           m.emissiveIntensity = saved.intensity + amount
         }
-        m.needsUpdate = true
+        // Intensity/color only — no needsUpdate (avoids material recompile thrash)
       }
     })
   }

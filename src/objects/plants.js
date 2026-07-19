@@ -283,7 +283,7 @@ function createShoot(leafMat, veinMat, stemMat, geometryFn, {
     stemMat,
   )
   petiole.position.y = petioleLen / 2
-  petiole.castShadow = true
+  petiole.castShadow = false
   shoot.add(petiole)
 
   const joint = new THREE.Mesh(
@@ -445,7 +445,7 @@ function createZZPlant({
     curve.getTangentAt(1, _tan).normalize()
     const tipCap = new THREE.Mesh(new THREE.SphereGeometry(topR * 1.15, 8, 6), stemMat)
     tipCap.position.copy(_pt)
-    tipCap.castShadow = true
+    tipCap.castShadow = false
     stem.add(tipCap)
 
     // Paired leaflets along the upper curve
@@ -473,7 +473,7 @@ function createZZPlant({
           .copy(_pt)
           .addScaledVector(_side, side * (attachR * 0.85 + petioleLen * 0.45))
         petiole.quaternion.setFromUnitVectors(_up, _side.clone().multiplyScalar(side))
-        petiole.castShadow = true
+        petiole.castShadow = false
         stem.add(petiole)
 
         const leaflet = new THREE.Mesh(createZZLeafletGeometry(), mat)
@@ -485,7 +485,7 @@ function createZZPlant({
         leaflet.quaternion.setFromUnitVectors(_up, _tan)
         leaflet.rotateZ(side * (0.95 + pt * 0.15))
         leaflet.rotateX(-0.12)
-        leaflet.castShadow = true
+        leaflet.castShadow = false
         stem.add(leaflet)
       }
     }
@@ -1159,7 +1159,7 @@ function createBirdFlower(scale = 1) {
     stemMat,
   )
   elbow.scale.set(1.15, 0.9, 1.2)
-  elbow.castShadow = true
+  elbow.castShadow = false
   head.add(elbow)
 
   // Short horizontal neck into the spathe (makes the right-angle read)
@@ -1223,7 +1223,7 @@ function createBirdFlower(scale = 1) {
   beak.rotation.z = -Math.PI / 2
   beak.scale.set(1, 1, 0.7)
   beak.position.set(spatheLen * 0.82, 0, 0)
-  beak.castShadow = true
+  beak.castShadow = false
   spathe.add(beak)
 
   // —— Bloom cluster: everything emerges from the spathe mouth ——
@@ -1422,7 +1422,7 @@ function createHangingPlanter({
     }),
   )
   mountPlate.position.y = 0.006
-  mountPlate.castShadow = true
+  mountPlate.castShadow = false
   plant.add(mountPlate)
 
   const hook = new THREE.Mesh(
@@ -1469,7 +1469,7 @@ function createHangingPlanter({
     potMat,
   )
   pot.position.y = potY
-  pot.castShadow = true
+  pot.castShadow = false
   plant.add(pot)
 
   const rim = new THREE.Mesh(
@@ -1580,6 +1580,9 @@ function createHangingPlanter({
   }
 
   plant.add(foliage)
+  plant.traverse((child) => {
+    if (child.isMesh) child.castShadow = false
+  })
   return plant
 }
 
@@ -1668,9 +1671,10 @@ export function createPlants() {
     leafColor: 0x3d7a48,
     leafColorAlt: 0x2a6338,
     trailLength: 0.4,
-    cordLength: 0.5,
+    cordLength: 0.55,
   })
-  hangB.position.set(WALL_POS - cornerInset, ceilingY, -(WALL_POS - cornerInset))
+  // Above the ZZ — same −X wall plane + drop as hangA (window-corner planter)
+  hangB.position.set(-(WALL_POS - cornerInset), ceilingY, -2.15)
   hangB.rotation.y = 0.6
   group.add(hangB)
 
@@ -1689,7 +1693,8 @@ export function createPlants() {
   return group
 }
 
-export function updatePlants(plants, elapsed) {
+export function updatePlants(plants, elapsed, { animate = true } = {}) {
+  if (!animate) return
   if (!plants.userData.foliage) {
     plants.userData.foliage = []
     plants.traverse((child) => {

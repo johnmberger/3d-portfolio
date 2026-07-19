@@ -346,7 +346,7 @@ function createWoodFloorMaps() {
   return { map, roughnessMap }
 }
 
-export function createRoom() {
+export function createRoom({ sideWindowGlow = true } = {}) {
   const group = new THREE.Group()
   group.name = 'room'
 
@@ -404,7 +404,7 @@ export function createRoom() {
   group.add(createLeftWall(wallMat, trimMat))
 
   // Right wall opposite the bathroom — smaller side window
-  group.add(createSideWindow(wallMat, trimMat))
+  group.add(createSideWindow(wallMat, trimMat, { sideWindowGlow }))
 
   // Front wall (+Z) with closed entrance door — opposite the window
   group.add(createFrontWall(wallMat, trimMat))
@@ -540,7 +540,7 @@ function createRoomBaseboards(trimMat) {
  * Smaller window on the +X wall (opposite the bathroom).
  * Opening sits between the desk and the kitchenette run.
  */
-function createSideWindow(wallMat, trimMat) {
+function createSideWindow(wallMat, trimMat, { sideWindowGlow = true } = {}) {
   const group = new THREE.Group()
   group.name = 'sideWindow'
 
@@ -688,11 +688,13 @@ function createSideWindow(wallMat, trimMat) {
     baseZ: winZ,
   })
 
-  // Soft fill from the side window
-  const glow = new THREE.PointLight(0xffc090, 0.55, 7, 2)
-  glow.castShadow = false
-  glow.position.set(wallX - 0.5, winY, winZ)
-  group.add(glow)
+  // Soft fill from the side window (skipped on low-power — main.js windowGlow covers it)
+  if (sideWindowGlow) {
+    const glow = new THREE.PointLight(0xffc090, 0.55, 7, 2)
+    glow.castShadow = false
+    glow.position.set(wallX - 0.5, winY, winZ)
+    group.add(glow)
+  }
 
   group.userData.parallax = {
     layers: parallaxLayers,

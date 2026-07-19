@@ -112,5 +112,7 @@ function setRockerPose(switchGroup, isNight) {
 }
 
 export function updateLightSwitch(switchGroup, { night = false } = {}) {
+  if (switchGroup.userData.switchNight === night) return
+  switchGroup.userData.switchNight = night
   setRockerPose(switchGroup, night)
 }

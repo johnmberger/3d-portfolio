@@ -518,16 +518,18 @@ export function createTurntable() {
   return group
 }
 
-export function updateTurntable(turntable, elapsed, { focused = false } = {}) {
+export function updateTurntable(turntable, elapsed, { focused = false, animate = true } = {}) {
   const screen = turntable.userData.screen ?? turntable.getObjectByName('screen')
   turntable.userData.screen = screen
   if (screen?.material) {
-    screen.material.emissiveIntensity = focused
-      ? 0.1
-      : 0.22 + Math.sin(elapsed * 1.2) * 0.06
+    if (focused) {
+      screen.material.emissiveIntensity = 0.1
+    } else if (animate) {
+      screen.material.emissiveIntensity = 0.22 + Math.sin(elapsed * 1.2) * 0.06
+    }
   }
 
-  if (focused) return
+  if (focused || !animate) return
 
   if (!turntable.userData.spinParts) {
     turntable.userData.spinParts = ['platter', 'slipmat', 'deckVinyl', 'deckLabel']

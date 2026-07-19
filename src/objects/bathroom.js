@@ -6,10 +6,8 @@ function markInteractive(mesh) {
   return mesh
 }
 
-/** Structural meshes stay clickable but don't get the hover glow. */
+/** Structural meshes — not focus targets (avoids trapping orbit behind walls/floor). */
 function markStructure(mesh) {
-  mesh.userData.interactive = 'bathroom'
-  mesh.userData.skipHover = true
   return mesh
 }
 
@@ -843,7 +841,7 @@ function createBathroomCeilingLight() {
  * Enclosed bathroom past the living-room's −X edge.
  * Doorway opens into the main room; interior is fully walled.
  */
-export function createBathroom() {
+export function createBathroom({ vanityFill = true } = {}) {
   const group = new THREE.Group()
   group.name = 'bathroom'
 
@@ -986,7 +984,7 @@ export function createBathroom() {
 
   const vanityLight = new THREE.PointLight(0xe8efe9, 0.18, 3.5, 2)
   vanityLight.position.set(roomW - 0.5, 1.95, vanityZ)
-  group.add(vanityLight)
+  if (vanityFill) group.add(vanityLight)
 
   // Ceiling fixture — primary bathroom light (keeps the room lit without living-room bleed)
   const ceilingLight = createBathroomCeilingLight()
@@ -1051,11 +1049,14 @@ export function createBathroom() {
   return group
 }
 
-export function updateBathroom(bathroom, elapsed, { focused = false } = {}) {
-  const screen = bathroom.getObjectByName('screen')
-  if (screen?.material) {
-    screen.material.emissiveIntensity = focused
-      ? 0.08
-      : 0.18 + Math.sin(elapsed * 1.1) * 0.05
+export function updateBathroom(bathroom, elapsed, { focused = false, animate = true } = {}) {
+  const screen = bathroom.userData.screen ?? bathroom.getObjectByName('screen')
+  bathroom.userData.screen = screen
+  if (!screen?.material) return
+  if (focused) {
+    screen.material.emissiveIntensity = 0.08
+    return
   }
+  if (!animate) return
+  screen.material.emissiveIntensity = 0.18 + Math.sin(elapsed * 1.1) * 0.05
 }

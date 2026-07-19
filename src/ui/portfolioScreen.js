@@ -47,11 +47,17 @@ export function createPortfolioScreen(monitor) {
     element.classList.add('is-loaded')
   })
 
-  // 850×480 px → scale 0.001 matches the 0.85×0.48 screen plane
+  // Match the WebGL screen plane (same pattern as earworms)
+  const screen = monitor.getObjectByName('screen')
+  const { width: worldW, height: worldH } = monitor.userData.screenSize ?? {
+    width: 0.85,
+    height: 0.48,
+  }
   const object = new CSS3DObject(element)
   object.visible = false
-  object.position.set(0, 0.42, 0.032)
-  object.scale.set(0.001, 0.001, 0.001)
+  object.position.copy(screen.position)
+  object.position.z += 0.004
+  object.scale.set(worldW / SCREEN_W, worldH / SCREEN_H, 1)
   monitor.add(object)
 
   function startLoad() {

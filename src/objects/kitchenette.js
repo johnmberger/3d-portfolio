@@ -297,7 +297,7 @@ function createFridge({ handle, kickMat }) {
  * L-shaped kitchenette wrapping the front-right corner.
  * Cabinets along the front wall and right wall; fridge finishes the side run.
  */
-export function createKitchenette() {
+export function createKitchenette({ underCabinetLights = true } = {}) {
   const group = new THREE.Group()
   group.name = 'kitchenette'
 
@@ -332,6 +332,7 @@ export function createKitchenette() {
     width,
     doors = 2,
     withUppers = true,
+    underCabinetLights = true,
   }) {
     const run = new THREE.Group()
     run.position.set(x, 0, z)
@@ -381,7 +382,7 @@ export function createKitchenette() {
       const glow = new THREE.PointLight(0xfff0e0, 0.18, 2.4, 2)
       glow.castShadow = false
       glow.position.set(0, upY - upH / 2 - 0.04, cabD * 0.65)
-      run.add(glow)
+      if (underCabinetLights) run.add(glow)
     }
 
     group.add(run)
@@ -444,6 +445,7 @@ export function createKitchenette() {
     yaw: 0,
     width: frontW,
     doors: 2,
+    underCabinetLights,
   })
 
   // Right wall run → toward the dining / side window
@@ -454,6 +456,7 @@ export function createKitchenette() {
     yaw: Math.PI / 2,
     width: sideW,
     doors: 3,
+    underCabinetLights,
   })
 
   // —— Counter props ——

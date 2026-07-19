@@ -36,8 +36,10 @@ function createSoftSmokeTexture() {
 /**
  * Brown glass cylinder candle with flame, warm point light, and rising smoke.
  * Call updateCandle(group, elapsed) each frame.
+ * @param {{ x?: number, y?: number, z?: number, staticSmoke?: boolean }} opts
+ *   staticSmoke — fixed wisps (mobile); skips per-frame particle uploads.
  */
-function createLitCandle({ x = 0, y = 0, z = 0 } = {}) {
+function createLitCandle({ x = 0, y = 0, z = 0, staticSmoke = false } = {}) {
   const group = new THREE.Group()
   group.name = 'litCandle'
   group.position.set(x, y, z)
@@ -58,7 +60,7 @@ function createLitCandle({ x = 0, y = 0, z = 0 } = {}) {
     }),
   )
   glass.position.y = glassH / 2
-  glass.castShadow = true
+  glass.castShadow = false
   group.add(glass)
 
   // Flame sits inside the glass vessel
@@ -89,30 +91,39 @@ function createLitCandle({ x = 0, y = 0, z = 0 } = {}) {
   light.position.y = flameY
   group.add(light)
 
-  const smokeCount = 20
+  const smokeBaseY = flameY + 0.02
+  const smokeCount = staticSmoke ? 5 : 20
   const positions = new Float32Array(smokeCount * 3)
   const particles = []
   for (let i = 0; i < smokeCount; i++) {
+    const t = (i + 0.5) / smokeCount
     particles.push({
-      age: i / smokeCount,
+      age: t,
       life: 1.4 + Math.random() * 0.8,
       speed: 0.09 + Math.random() * 0.07,
       driftX: (Math.random() - 0.5) * 0.04,
       driftZ: (Math.random() - 0.5) * 0.04,
       wobble: Math.random() * Math.PI * 2,
     })
-    positions[i * 3] = 0
-    positions[i * 3 + 1] = flameY + 0.02
-    positions[i * 3 + 2] = 0
+    if (staticSmoke) {
+      // Soft stacked wisps — look like smoke without animating
+      positions[i * 3] = (Math.random() - 0.5) * 0.025
+      positions[i * 3 + 1] = smokeBaseY + t * 0.11
+      positions[i * 3 + 2] = (Math.random() - 0.5) * 0.025
+    } else {
+      positions[i * 3] = 0
+      positions[i * 3 + 1] = smokeBaseY
+      positions[i * 3 + 2] = 0
+    }
   }
   const smokeGeo = new THREE.BufferGeometry()
   smokeGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3))
   const smokeMat = new THREE.PointsMaterial({
     map: createSoftSmokeTexture(),
     color: 0xb0b0b0,
-    size: 0.07,
+    size: staticSmoke ? 0.06 : 0.07,
     transparent: true,
-    opacity: 0.45,
+    opacity: staticSmoke ? 0.28 : 0.45,
     depthWrite: false,
     sizeAttenuation: true,
     blending: THREE.NormalBlending,
@@ -129,7 +140,8 @@ function createLitCandle({ x = 0, y = 0, z = 0 } = {}) {
     smoke,
     smokePositions: positions,
     particles,
-    smokeBaseY: flameY + 0.02,
+    smokeBaseY,
+    staticSmoke,
   }
 
   return group
@@ -146,14 +158,20 @@ export function updateCandle(candleRoot, elapsed, delta = 1 / 60) {
     const c = root.userData.candle
     if (!c) continue
 
-    const flicker =
-      0.85 + Math.sin(elapsed * 11.3) * 0.08 + Math.sin(elapsed * 17.7) * 0.06
+    // Lighter flicker on static-smoke (mobile) candles
+    const flicker = c.staticSmoke
+      ? 0.92 + Math.sin(elapsed * 6.5) * 0.05
+      : 0.85 + Math.sin(elapsed * 11.3) * 0.08 + Math.sin(elapsed * 17.7) * 0.06
     c.light.intensity = 0.22 + flicker * 0.12
     c.flame.scale.set(0.65 * flicker, 1.35 + flicker * 0.2, 0.65 * flicker)
     c.flameCore.scale.set(0.6 * flicker, 1.15 + flicker * 0.15, 0.6 * flicker)
     c.flameMat.emissiveIntensity = 1.1 + flicker * 0.5
-    c.flame.position.x = Math.sin(elapsed * 9.2) * 0.002
-    c.flame.position.z = Math.cos(elapsed * 7.4) * 0.002
+    if (!c.staticSmoke) {
+      c.flame.position.x = Math.sin(elapsed * 9.2) * 0.002
+      c.flame.position.z = Math.cos(elapsed * 7.4) * 0.002
+    }
+
+    if (c.staticSmoke) continue
 
     const pos = c.smokePositions
     for (let i = 0; i < c.particles.length; i++) {
@@ -233,7 +251,7 @@ export function createCoffeeTable() {
     )
     book.position.set(-0.22, topY + 0.025 + i * 0.032, 0.05)
     book.rotation.y = -0.15 + i * 0.08
-    book.castShadow = true
+    book.castShadow = false
     group.add(book)
   })
 
@@ -247,7 +265,7 @@ export function createCoffeeTable() {
     mat(0xc4b09a, { roughness: 0.45 }),
   )
   bowl.position.set(0.28, topY + 0.03, 0.12)
-  bowl.castShadow = true
+  bowl.castShadow = false
   group.add(bowl)
 
   // Between the sectional and dining — slightly toward the TV nook
@@ -264,6 +282,7 @@ export function createRoundCoffeeTable({
   position = [-1.85, 0, 2.65],
   radius = 0.34,
   topY = 0.34,
+  staticSmoke = false,
 } = {}) {
   const group = new THREE.Group()
   group.name = 'roundCoffeeTable'
@@ -318,7 +337,7 @@ export function createRoundCoffeeTable({
   )
   book.position.set(-0.08, topY + 0.025, 0.05)
   book.rotation.y = 0.25
-  book.castShadow = true
+  book.castShadow = false
   group.add(book)
 
   const coaster = new THREE.Mesh(
@@ -328,7 +347,12 @@ export function createRoundCoffeeTable({
   coaster.position.set(0.1, topY + 0.02, -0.06)
   group.add(coaster)
 
-  const candle = createLitCandle({ x: 0.1, y: topY + 0.024, z: -0.06 })
+  const candle = createLitCandle({
+    x: 0.1,
+    y: topY + 0.024,
+    z: -0.06,
+    staticSmoke,
+  })
   group.add(candle)
   group.userData.candles = [candle]
 

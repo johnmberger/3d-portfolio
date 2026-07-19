@@ -76,6 +76,7 @@ export function createTimeOfDay({
   windowRim,
   room,
   button,
+  windowRimScale = 1,
 }) {
   const textures = {
     sunset: makeSkyTexture(PRESETS.sunset.skyStops),
@@ -158,7 +159,9 @@ export function createTimeOfDay({
 
     lerpColor(windowRim.color, from.windowRim.color, to.windowRim.color, e)
     windowRim.intensity =
-      from.windowRim.intensity + (to.windowRim.intensity - from.windowRim.intensity) * e
+      (from.windowRim.intensity +
+        (to.windowRim.intensity - from.windowRim.intensity) * e) *
+      windowRimScale
 
     return mode
   }

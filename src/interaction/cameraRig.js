@@ -7,6 +7,11 @@ const FOCUS_MIN_DISTANCE = 0.05
  * Smoothly eases camera + OrbitControls target between explore and focus poses.
  */
 export function createCameraRig(camera, controls) {
+  const home = {
+    position: camera.position.clone(),
+    target: controls.target.clone(),
+  }
+
   const explore = {
     position: camera.position.clone(),
     target: controls.target.clone(),
@@ -17,7 +22,7 @@ export function createCameraRig(camera, controls) {
     target: new THREE.Vector3(),
   }
 
-  let mode = 'explore' // explore | toFocus | focused | toExplore
+  let mode = 'explore' // explore | toFocus | focused | toExplore | toHome
   let t = 1
   const duration = 1.05
   let screenW = 0.85
@@ -91,6 +96,14 @@ export function createCameraRig(camera, controls) {
     controls.enabled = false
   }
 
+  function finishExplore() {
+    mode = 'explore'
+    activeScreen = null
+    controls.minDistance = exploreMinDistance
+    restoreOrbitLimits()
+    controls.enabled = true
+  }
+
   function enterFocus(
     screenMesh,
     {
@@ -100,7 +113,7 @@ export function createCameraRig(camera, controls) {
       minDistance = 0,
     } = {},
   ) {
-    if (mode === 'focused' || mode === 'toFocus') return
+    if (mode === 'focused' || mode === 'toFocus' || mode === 'toHome') return
     screenW = width
     screenH = height
     focusFill = fill
@@ -117,8 +130,20 @@ export function createCameraRig(camera, controls) {
   }
 
   function exitFocus() {
-    if (mode === 'explore' || mode === 'toExplore') return
+    if (mode === 'explore' || mode === 'toExplore' || mode === 'toHome') return
     beginTransition('toExplore', explore)
+  }
+
+  /** Ease back to the initial room view (works from explore or focus). */
+  function resetView() {
+    if (mode === 'toFocus' || mode === 'toExplore' || mode === 'toHome') return false
+    if (mode !== 'focused') {
+      exploreMinDistance = controls.minDistance
+    }
+    explore.position.copy(home.position)
+    explore.target.copy(home.target)
+    beginTransition('toHome', home)
+    return true
   }
 
   /** Keep framing tight after viewport resize while focused. */
@@ -136,7 +161,7 @@ export function createCameraRig(camera, controls) {
   }
 
   function update(delta) {
-    if (mode !== 'toFocus' && mode !== 'toExplore') return mode
+    if (mode !== 'toFocus' && mode !== 'toExplore' && mode !== 'toHome') return mode
 
     t = Math.min(1, t + delta / duration)
     const e = easeInOutCubic(t)
@@ -148,11 +173,7 @@ export function createCameraRig(camera, controls) {
       if (mode === 'toFocus') {
         mode = 'focused'
       } else {
-        mode = 'explore'
-        activeScreen = null
-        controls.minDistance = exploreMinDistance
-        restoreOrbitLimits()
-        controls.enabled = true
+        finishExplore()
       }
     }
 
@@ -162,6 +183,7 @@ export function createCameraRig(camera, controls) {
   return {
     enterFocus,
     exitFocus,
+    resetView,
     refocus,
     update,
     get mode() {
@@ -171,7 +193,7 @@ export function createCameraRig(camera, controls) {
       return mode === 'focused'
     },
     get isBusy() {
-      return mode === 'toFocus' || mode === 'toExplore'
+      return mode === 'toFocus' || mode === 'toExplore' || mode === 'toHome'
     },
     get activeScreen() {
       return activeScreen

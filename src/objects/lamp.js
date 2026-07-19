@@ -129,6 +129,9 @@ export function createFloorLamp({
 }
 
 export function updateFloorLamp(lamp, { night = false } = {}) {
+  if (lamp.userData.lampNight === night) return
+  lamp.userData.lampNight = night
+
   const light = lamp.userData.lampLight ?? lamp.getObjectByName('lampLight')
   const bulb = lamp.userData.lampBulb ?? lamp.getObjectByName('lampBulb')
   const shade = lamp.userData.lampShade ?? lamp.getObjectByName('lampShade')
@@ -139,4 +142,117 @@ export function updateFloorLamp(lamp, { night = false } = {}) {
   if (light) light.intensity = night ? 1.85 : 0.55
   if (bulb?.material) bulb.material.emissiveIntensity = night ? 1.8 : 0.6
   if (shade?.material) shade.material.emissiveIntensity = night ? 0.7 : 0.2
+}
+
+/**
+ * Ceiling pendant — brass canopy, cord, linen shade. Hang from the ceiling
+ * (group origin at the ceiling mount).
+ */
+export function createHangingPendant({
+  position = [0, 4.2, 0],
+  cordLength = 0.85,
+  name = 'hangingPendant',
+} = {}) {
+  const group = new THREE.Group()
+  group.name = name
+
+  const brass = new THREE.MeshStandardMaterial({
+    color: 0xb8975a,
+    roughness: 0.35,
+    metalness: 0.7,
+  })
+  const brassDark = new THREE.MeshStandardMaterial({
+    color: 0x8a6e40,
+    roughness: 0.4,
+    metalness: 0.65,
+  })
+  const shadeMat = new THREE.MeshStandardMaterial({
+    color: 0xf0e4c8,
+    roughness: 0.85,
+    metalness: 0,
+    emissive: 0xe8f0d0,
+    emissiveIntensity: 0.28,
+    side: THREE.DoubleSide,
+  })
+
+  // Ceiling canopy / rose
+  const canopy = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.055, 0.07, 0.028, 20),
+    brassDark,
+  )
+  canopy.position.y = -0.01
+  canopy.castShadow = true
+  group.add(canopy)
+
+  const cord = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.004, 0.004, cordLength, 6),
+    new THREE.MeshStandardMaterial({ color: 0x2a2a28, roughness: 0.85 }),
+  )
+  cord.position.y = -cordLength / 2 - 0.02
+  group.add(cord)
+
+  const socket = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.022, 0.04, 12), brass)
+  socket.position.y = -cordLength - 0.04
+  group.add(socket)
+
+  const shadeH = 0.2
+  const shadeY = -cordLength - 0.06 - shadeH / 2
+  const shade = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.07, 0.16, shadeH, 24, 1, true),
+    shadeMat,
+  )
+  shade.name = 'lampShade'
+  shade.position.y = shadeY
+  shade.castShadow = true
+  group.add(shade)
+
+  const shadeTop = new THREE.Mesh(
+    new THREE.CircleGeometry(0.07, 24),
+    new THREE.MeshStandardMaterial({
+      color: 0xe8dcb8,
+      roughness: 0.8,
+      side: THREE.DoubleSide,
+    }),
+  )
+  shadeTop.rotation.x = Math.PI / 2
+  shadeTop.position.y = shadeY + shadeH / 2 - 0.002
+  group.add(shadeTop)
+
+  const bulb = new THREE.Mesh(
+    new THREE.SphereGeometry(0.032, 12, 10),
+    new THREE.MeshStandardMaterial({
+      color: 0xfff2c8,
+      emissive: 0xe8f0a0,
+      emissiveIntensity: 0.9,
+      roughness: 0.4,
+    }),
+  )
+  bulb.name = 'lampBulb'
+  bulb.position.y = shadeY + shadeH * 0.1
+  group.add(bulb)
+
+  const light = new THREE.PointLight(0xe8f0d0, 0.7, 5.2, 2)
+  light.name = 'lampLight'
+  light.position.y = shadeY
+  light.castShadow = false
+  group.add(light)
+
+  group.position.set(...position)
+  return group
+}
+
+export function updateHangingPendant(pendant, { night = false } = {}) {
+  if (pendant.userData.lampNight === night) return
+  pendant.userData.lampNight = night
+
+  const light = pendant.userData.lampLight ?? pendant.getObjectByName('lampLight')
+  const bulb = pendant.userData.lampBulb ?? pendant.getObjectByName('lampBulb')
+  const shade = pendant.userData.lampShade ?? pendant.getObjectByName('lampShade')
+  pendant.userData.lampLight = light
+  pendant.userData.lampBulb = bulb
+  pendant.userData.lampShade = shade
+
+  if (light) light.intensity = night ? 1.15 : 0.6
+  if (bulb?.material) bulb.material.emissiveIntensity = night ? 1.4 : 0.75
+  if (shade?.material) shade.material.emissiveIntensity = night ? 0.6 : 0.24
 }

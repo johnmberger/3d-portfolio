@@ -56,7 +56,7 @@ function createKeyboard() {
   function addKey(w, x, z, mat) {
     const key = new THREE.Mesh(new THREE.BoxGeometry(w, keyH, keyD), mat)
     key.position.set(x, keyY, z)
-    key.castShadow = true
+    key.castShadow = false
     keyboard.add(key)
   }
 
@@ -368,74 +368,65 @@ function createLaptop() {
   return laptop
 }
 
-/** Compact bar webcam that clips onto the top of a monitor. */
+/** Compact bar webcam perched on the top bezel. */
 function createWebcam() {
   const cam = new THREE.Group()
   cam.name = 'webcam'
 
   const shellMat = new THREE.MeshStandardMaterial({
-    color: 0x1a1a1c,
-    roughness: 0.4,
-    metalness: 0.35,
+    color: 0x2a2c30,
+    roughness: 0.38,
+    metalness: 0.65,
   })
   const darkMat = new THREE.MeshStandardMaterial({
     color: 0x0a0a0c,
     roughness: 0.55,
-    metalness: 0.2,
+    metalness: 0.25,
   })
   const glassMat = new THREE.MeshStandardMaterial({
     color: 0x1a2830,
     roughness: 0.15,
     metalness: 0.4,
     emissive: 0x0a1520,
-    emissiveIntensity: 0.15,
+    emissiveIntensity: 0.2,
   })
   const ledMat = new THREE.MeshStandardMaterial({
     color: 0x2a2a2e,
     emissive: 0x3a8a4a,
-    emissiveIntensity: 0.55,
+    emissiveIntensity: 0.7,
     roughness: 0.4,
   })
 
-  // Main bar body
   const body = markInteractive(
-    new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.028, 0.028), shellMat),
+    new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.022, 0.024), shellMat),
   )
-  body.position.y = 0.02
+  body.position.y = 0.014
   body.castShadow = true
   cam.add(body)
 
-  // Rounded lens housing
   const lensRing = markInteractive(
-    new THREE.Mesh(new THREE.CylinderGeometry(0.011, 0.011, 0.008, 16), darkMat),
+    new THREE.Mesh(new THREE.CylinderGeometry(0.009, 0.009, 0.006, 16), darkMat),
   )
   lensRing.rotation.x = Math.PI / 2
-  lensRing.position.set(0, 0.02, 0.016)
+  lensRing.position.set(0, 0.014, 0.014)
   cam.add(lensRing)
 
   const lens = markInteractive(
-    new THREE.Mesh(new THREE.CircleGeometry(0.008, 16), glassMat),
+    new THREE.Mesh(new THREE.CircleGeometry(0.0065, 16), glassMat),
   )
-  lens.position.set(0, 0.02, 0.021)
+  lens.position.set(0, 0.014, 0.018)
   cam.add(lens)
 
-  // Activity LED
-  const led = new THREE.Mesh(new THREE.CircleGeometry(0.0025, 10), ledMat)
-  led.position.set(0.028, 0.02, 0.015)
+  const led = new THREE.Mesh(new THREE.CircleGeometry(0.0022, 10), ledMat)
+  led.position.set(0.024, 0.014, 0.013)
   cam.add(led)
 
-  // Clip that hooks over the top bezel
-  const clipBack = markInteractive(
-    new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.018, 0.012), shellMat),
+  // Soft clip over the bezel top
+  const clip = markInteractive(
+    new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.01, 0.018), shellMat),
   )
-  clipBack.position.set(0, 0.004, -0.016)
-  cam.add(clipBack)
-
-  const clipHook = markInteractive(
-    new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.008, 0.022), shellMat),
-  )
-  clipHook.position.set(0, -0.006, -0.01)
-  cam.add(clipHook)
+  clip.position.set(0, 0.002, -0.008)
+  cam.add(clip)
 
   return cam
 }
@@ -444,73 +435,91 @@ export function createMonitor() {
   const group = new THREE.Group()
   group.name = 'monitor'
 
+  // Space-black aluminum — closer to the laptop / trackpad language
   const bodyMat = new THREE.MeshStandardMaterial({
-    color: 0x2a2e2c,
-    roughness: 0.55,
-    metalness: 0.25,
+    color: 0x2c2e32,
+    roughness: 0.38,
+    metalness: 0.72,
   })
   const standMat = new THREE.MeshStandardMaterial({
-    color: 0x3a3f3c,
-    roughness: 0.5,
-    metalness: 0.3,
+    color: 0x3a3c40,
+    roughness: 0.32,
+    metalness: 0.78,
   })
   const bezelMat = new THREE.MeshStandardMaterial({
-    color: 0x1a1c1b,
-    roughness: 0.7,
-    metalness: 0.1,
+    color: 0x121314,
+    roughness: 0.55,
+    metalness: 0.35,
   })
 
   // Dark backing behind the CSS3D portfolio UI (not a zoom hotspot)
   const screenMat = new THREE.MeshStandardMaterial({
-    color: 0x0e1210,
-    emissive: 0x1a2820,
-    emissiveIntensity: 0.35,
-    roughness: 0.85,
-    metalness: 0.05,
+    color: 0x0a0c0e,
+    emissive: 0x141c22,
+    emissiveIntensity: 0.32,
+    roughness: 0.9,
+    metalness: 0.02,
   })
 
-  const outerW = 0.95
-  const outerH = 0.58
+  // Glass stays 0.85×0.48 so the résumé CSS3D scale (850×480 @ 0.001) still matches
   const innerW = 0.85
   const innerH = 0.48
-  const frameT = (outerW - innerW) / 2
-  const frameDepth = 0.05
+  const sideT = 0.012
+  const topT = 0.014
+  const chinT = 0.026
+  const outerW = innerW + sideT * 2
+  const outerH = innerH + topT + chinT
+  const frameDepth = 0.028
   const screenY = 0.42
   // Nudge display toward the back edge of the desk (keyboard stays forward)
   const monitorZ = -0.08
 
-  // Frame bezel only — screen opening is empty so center clicks miss the monitor
+  group.userData.screenSize = { width: innerW, height: innerH }
+
   const topBezel = markInteractive(
-    new THREE.Mesh(new THREE.BoxGeometry(outerW, frameT, frameDepth), bezelMat),
+    new THREE.Mesh(new THREE.BoxGeometry(outerW, topT, frameDepth), bezelMat),
   )
-  topBezel.position.set(0, screenY + (innerH + frameT) / 2, monitorZ)
+  topBezel.position.set(0, screenY + innerH / 2 + topT / 2, monitorZ)
   topBezel.castShadow = true
   group.add(topBezel)
 
   const bottomBezel = markInteractive(
-    new THREE.Mesh(new THREE.BoxGeometry(outerW, frameT, frameDepth), bezelMat),
+    new THREE.Mesh(new THREE.BoxGeometry(outerW, chinT, frameDepth), bezelMat),
   )
-  bottomBezel.position.set(0, screenY - (innerH + frameT) / 2, monitorZ)
+  bottomBezel.position.set(0, screenY - innerH / 2 - chinT / 2, monitorZ)
   bottomBezel.castShadow = true
   group.add(bottomBezel)
 
-  const sideH = innerH
   const leftBezel = markInteractive(
-    new THREE.Mesh(new THREE.BoxGeometry(frameT, sideH, frameDepth), bezelMat),
+    new THREE.Mesh(new THREE.BoxGeometry(sideT, innerH, frameDepth), bezelMat),
   )
-  leftBezel.position.set(-(innerW + frameT) / 2, screenY, monitorZ)
+  leftBezel.position.set(-(innerW + sideT) / 2, screenY, monitorZ)
   leftBezel.castShadow = true
   group.add(leftBezel)
 
   const rightBezel = markInteractive(
-    new THREE.Mesh(new THREE.BoxGeometry(frameT, sideH, frameDepth), bezelMat),
+    new THREE.Mesh(new THREE.BoxGeometry(sideT, innerH, frameDepth), bezelMat),
   )
-  rightBezel.position.set((innerW + frameT) / 2, screenY, monitorZ)
+  rightBezel.position.set((innerW + sideT) / 2, screenY, monitorZ)
   rightBezel.castShadow = true
   group.add(rightBezel)
 
+  // Hairline power mark on the chin
+  const powerLed = new THREE.Mesh(
+    new THREE.BoxGeometry(0.014, 0.0018, 0.001),
+    new THREE.MeshStandardMaterial({
+      color: 0x6ec8ff,
+      emissive: 0x4aa8e8,
+      emissiveIntensity: 0.85,
+      roughness: 0.4,
+      metalness: 0.1,
+    }),
+  )
+  powerLed.position.set(0, screenY - innerH / 2 - chinT * 0.55, monitorZ + frameDepth / 2 + 0.001)
+  group.add(powerLed)
+
   const screen = new THREE.Mesh(new THREE.PlaneGeometry(innerW, innerH), screenMat)
-  screen.position.set(0, screenY, monitorZ + 0.028)
+  screen.position.set(0, screenY, monitorZ + frameDepth / 2 + 0.002)
   screen.name = 'screen'
   markInteractive(screen)
   group.add(screen)
@@ -526,35 +535,37 @@ export function createMonitor() {
       }),
     ),
   )
-  screenHit.position.set(0, screenY, monitorZ + 0.04)
+  screenHit.position.set(0, screenY, monitorZ + frameDepth / 2 + 0.01)
   screenHit.name = 'screenHit'
   group.add(screenHit)
 
-  // Solid rear shell — blocks seeing through the monitor from behind
+  // Slim rear shell
   const backShell = markInteractive(
-    new THREE.Mesh(new THREE.BoxGeometry(outerW, outerH, 0.06), bodyMat),
+    new THREE.Mesh(new THREE.BoxGeometry(outerW * 0.98, outerH * 0.98, 0.038), bodyMat),
   )
-  backShell.position.set(0, screenY, monitorZ - 0.04)
+  backShell.position.set(0, screenY, monitorZ - 0.028)
   backShell.castShadow = true
   group.add(backShell)
 
+  // Thin stem + oval foot
   const neck = markInteractive(
-    new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.22, 0.04), standMat),
+    new THREE.Mesh(new THREE.BoxGeometry(0.042, 0.26, 0.018), standMat),
   )
-  neck.position.set(0, 0.1, monitorZ - 0.02)
+  neck.position.set(0, 0.12, monitorZ - 0.01)
+  neck.castShadow = true
   group.add(neck)
 
   const base = markInteractive(
-    new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.15, 0.025, 24), standMat),
+    new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.108, 0.01, 32), standMat),
   )
-  base.position.set(0, 0.0125, monitorZ)
+  base.scale.set(1.45, 1, 0.78)
+  base.position.set(0, 0.005, monitorZ + 0.01)
   base.castShadow = true
   group.add(base)
 
   // Webcam perched on the top bezel
-  const topBezelY = screenY + (innerH + frameT) / 2
   const webcam = createWebcam()
-  webcam.position.set(0, topBezelY + frameT / 2, monitorZ + 0.01)
+  webcam.position.set(0, screenY + innerH / 2 + topT, monitorZ + 0.006)
   group.add(webcam)
 
   const keyboard = createKeyboard()
@@ -578,12 +589,14 @@ export function createMonitor() {
   return group
 }
 
-export function updateMonitor(monitor, elapsed, { focused = false } = {}) {
+export function updateMonitor(monitor, elapsed, { focused = false, animate = true } = {}) {
   const screen = monitor.userData.screen ?? monitor.getObjectByName('screen')
   monitor.userData.screen = screen
-  if (screen?.material) {
-    screen.material.emissiveIntensity = focused
-      ? 0.15
-      : 0.28 + Math.sin(elapsed * 1.4) * 0.08
+  if (!screen?.material) return
+  if (focused) {
+    screen.material.emissiveIntensity = 0.15
+    return
   }
+  if (!animate) return
+  screen.material.emissiveIntensity = 0.28 + Math.sin(elapsed * 1.4) * 0.08
 }

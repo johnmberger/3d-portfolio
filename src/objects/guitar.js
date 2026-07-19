@@ -353,7 +353,7 @@ function createElectricBassMount() {
 }
 
 /** Warm picture light above the instruments, washing the vinyl credenza below. */
-function createVinylWallLight() {
+function createVinylWallLight({ fillLight = true } = {}) {
   const fixture = new THREE.Group()
   fixture.name = 'vinylWallLight'
 
@@ -393,13 +393,15 @@ function createVinylWallLight() {
   bulb.position.set(0, -0.012, 0.16)
   fixture.add(bulb)
 
-  // Soft fill near the fixture
-  const fill = new THREE.PointLight(0xffd9a0, 0.35, 2.8, 2)
-  fill.position.set(0, -0.05, 0.18)
-  fixture.add(fill)
+  // Soft fill near the fixture (skipped on low-power)
+  if (fillLight) {
+    const fill = new THREE.PointLight(0xffd9a0, 0.35, 2.8, 2)
+    fill.position.set(0, -0.05, 0.18)
+    fixture.add(fill)
+  }
 
   // Main wash onto the credenza top
-  const spot = new THREE.SpotLight(0xffe2b8, 2.4, 4.5, Math.PI / 5, 0.45, 1.4)
+  const spot = new THREE.SpotLight(0xffe2b8, fillLight ? 2.4 : 2.8, 4.5, Math.PI / 5, 0.45, 1.4)
   spot.position.set(0, -0.04, 0.17)
   spot.castShadow = false
   fixture.add(spot)
@@ -415,7 +417,7 @@ function createVinylWallLight() {
 /**
  * Acoustic, electric bass (GLB), and ukulele hung on the back wall above the vinyl cabinet.
  */
-export function createWallInstruments() {
+export function createWallInstruments({ fillLight = true } = {}) {
   const group = new THREE.Group()
   group.name = 'wallInstruments'
 
@@ -439,7 +441,7 @@ export function createWallInstruments() {
   group.add(acoustic)
 
   // Centered over the instrument trio / vinyl run
-  const wallLight = createVinylWallLight()
+  const wallLight = createVinylWallLight({ fillLight })
   wallLight.position.set(-3.25, 2.58, -(WALL_POS - 0.04))
   group.add(wallLight)
 

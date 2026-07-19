@@ -198,7 +198,7 @@ function prepareFoodModel(scene, { targetHeight, uprightFromZ = false } = {}) {
 
   scene.traverse((child) => {
     if (!child.isMesh) return
-    child.castShadow = true
+    child.castShadow = false
     child.receiveShadow = true
     const mats = Array.isArray(child.material) ? child.material : [child.material]
     for (const m of mats) {
@@ -640,7 +640,7 @@ function createKnife(material) {
   )
   body.rotation.x = -Math.PI / 2
   body.position.y = 0.0022
-  body.castShadow = true
+  body.castShadow = false
   knife.add(body)
 
   return knife
@@ -679,7 +679,7 @@ function createFork(material) {
   )
   body.rotation.x = -Math.PI / 2
   body.position.y = 0.002
-  body.castShadow = true
+  body.castShadow = false
   fork.add(body)
 
   // Tines rooted in the head so they read as connected
@@ -702,7 +702,7 @@ function createFork(material) {
     )
     tine.rotation.x = -Math.PI / 2
     tine.position.set(0, 0.0022, z)
-    tine.castShadow = true
+    tine.castShadow = false
     fork.add(tine)
   }
 
@@ -745,12 +745,12 @@ export function createDiningTable() {
 
   const surfaceY = 0.765
 
-  // Invisible hit deck over the whole tabletop so the meal (not only the menu) is clickable
+  // Compact hit over the menu card — not the whole tabletop (keeps orbit free around the meal)
   const hitDeck = new THREE.Mesh(
-    new THREE.BoxGeometry(1.4, 0.08, 0.85),
+    new THREE.BoxGeometry(0.42, 0.06, 0.32),
     new THREE.MeshBasicMaterial({ visible: false }),
   )
-  hitDeck.position.y = surfaceY + 0.04
+  hitDeck.position.set(0.02, surfaceY + 0.04, 0.02)
   hitDeck.userData.interactive = 'about'
   hitDeck.userData.skipHover = true
   group.add(hitDeck)

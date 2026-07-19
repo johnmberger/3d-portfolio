@@ -171,11 +171,14 @@ export function createCreditsPlaque() {
 }
 
 /** Soft idle glow so the plaque reads as interactive from across the room. */
-export function updateCreditsPlaque(plaque, elapsed, { focused = false } = {}) {
+export function updateCreditsPlaque(plaque, elapsed, { focused = false, animate = true } = {}) {
   const screen = plaque.userData.screen ?? plaque.getObjectByName('screen')
   plaque.userData.screen = screen
   if (!screen?.material) return
-  screen.material.emissiveIntensity = focused
-    ? 0.06
-    : 0.14 + Math.sin(elapsed * 1.4) * 0.05
+  if (focused) {
+    screen.material.emissiveIntensity = 0.06
+    return
+  }
+  if (!animate) return
+  screen.material.emissiveIntensity = 0.14 + Math.sin(elapsed * 1.4) * 0.05
 }

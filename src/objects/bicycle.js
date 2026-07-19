@@ -89,8 +89,10 @@ function findUpperWheelHangPoint(model, target = new THREE.Vector3()) {
  * Bicycle by Poly by Google (CC BY 3.0) via Poly Pizza.
  * Hung vertically on the front wall beside the entry door (single hanger).
  * https://poly.pizza/m/19VoUuA2pcN
+ *
+ * @param {{ defer?: boolean }} [opts] — if defer, call startLoad() after first paint
  */
-export function createBicycle() {
+export function createBicycle({ defer = false } = {}) {
   const group = new THREE.Group()
   group.name = 'bicycle'
 
@@ -106,7 +108,17 @@ export function createBicycle() {
   group.position.set(1.74, 1.1, 4.42)
   group.rotation.y = Math.PI
 
+  let started = false
+  let resolveReady
+  let rejectReady
   const ready = new Promise((resolve, reject) => {
+    resolveReady = resolve
+    rejectReady = reject
+  })
+
+  function startLoad() {
+    if (started) return ready
+    started = true
     const loader = new GLTFLoader()
     loader.load(
       BIKE_URL,
@@ -174,14 +186,17 @@ export function createBicycle() {
         const lift = CLEARANCE - bottomWorld
         group.position.y += lift
 
-        resolve(group)
+        resolveReady(group)
       },
       undefined,
-      reject,
+      rejectReady,
     )
-  })
+    return ready
+  }
 
-  return { group, ready }
+  if (!defer) startLoad()
+
+  return { group, ready, startLoad }
 }
 
 export function updateBicycle(_bike, _elapsed) {

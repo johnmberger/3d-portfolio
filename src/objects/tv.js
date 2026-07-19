@@ -253,12 +253,14 @@ function createXboxSeriesX() {
   return xbox
 }
 
-export function updateTV(tv, elapsed, { focused = false } = {}) {
+export function updateTV(tv, elapsed, { focused = false, animate = true } = {}) {
   const screen = tv.userData.tvScreen ?? tv.getObjectByName('screen')
   tv.userData.tvScreen = screen
-  if (screen?.material) {
-    screen.material.emissiveIntensity = focused
-      ? 0.32
-      : 0.2 + Math.sin(elapsed * 0.7) * 0.035
+  if (!screen?.material) return
+  if (focused) {
+    screen.material.emissiveIntensity = 0.32
+    return
   }
+  if (!animate) return
+  screen.material.emissiveIntensity = 0.2 + Math.sin(elapsed * 0.7) * 0.035
 }

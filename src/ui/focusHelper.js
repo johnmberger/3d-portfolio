@@ -8,6 +8,8 @@ const _ndc = new THREE.Vector3()
 
 const EDGE_MARGIN = 16
 const SIDE_GAP = 28
+/** Frames to measure layout before fading in (avoids left/right flip flash). */
+const SETTLE_FRAMES = 2
 
 function isMobileViewport() {
   return window.matchMedia('(max-width: 900px), (pointer: coarse)').matches
@@ -15,7 +17,7 @@ function isMobileViewport() {
 
 /**
  * Floating bubble caption that sits beside a focused 3D screen.
- * On mobile it docks to the bottom so it doesn't cover the view.
+ * On mobile it docks to the top/bottom so it doesn't cover the view.
  */
 export function createFocusHelper(parent = document.getElementById('app')) {
   const el = document.createElement('aside')
@@ -40,6 +42,13 @@ export function createFocusHelper(parent = document.getElementById('app')) {
   const linkEl = el.querySelector('.focus-helper__link')
   let anchor = null
   let screenW = 0.4
+  /** @type {'auto' | 'top' | 'bottom'} */
+  let dock = 'auto'
+  /** @type {'left' | 'right' | null} */
+  let lockedSide = null
+  let settleLeft = 0
+  let revealed = false
+  let revealRaf = 0
 
   function show({
     title,
@@ -50,6 +59,7 @@ export function createFocusHelper(parent = document.getElementById('app')) {
     links,
     anchor: nextAnchor,
     width = 0.4,
+    dock: nextDock = 'auto',
   }) {
     titleEl.textContent = title
     if (blurb) {
@@ -116,14 +126,50 @@ export function createFocusHelper(parent = document.getElementById('app')) {
       }
     }
 
+    if (revealRaf) {
+      cancelAnimationFrame(revealRaf)
+      revealRaf = 0
+    }
+
     anchor = nextAnchor
     screenW = width
+    dock = nextDock
+    lockedSide = null
+    settleLeft = SETTLE_FRAMES
+    revealed = false
+    el.classList.remove('is-visible')
     el.hidden = false
   }
 
   function hide() {
+    if (revealRaf) {
+      cancelAnimationFrame(revealRaf)
+      revealRaf = 0
+    }
     anchor = null
+    dock = 'auto'
+    lockedSide = null
+    settleLeft = 0
+    revealed = false
+    el.classList.remove('is-visible')
     el.hidden = true
+    el.style.left = ''
+    el.style.top = ''
+    el.style.right = ''
+    el.style.bottom = ''
+    el.style.transform = ''
+    el.dataset.side = ''
+  }
+
+  function reveal() {
+    if (revealed || !anchor || el.hidden) return
+    revealed = true
+    // One more frame so layout/side are painted before the opacity transition
+    revealRaf = requestAnimationFrame(() => {
+      revealRaf = 0
+      if (!anchor || el.hidden) return
+      el.classList.add('is-visible')
+    })
   }
 
   function toScreen(vec3, camera) {
@@ -139,12 +185,23 @@ export function createFocusHelper(parent = document.getElementById('app')) {
     if (!anchor || el.hidden) return
 
     if (isMobileViewport()) {
-      el.dataset.side = 'bottom'
-      el.style.opacity = '1'
+      const side =
+        dock === 'top' || dock === 'bottom'
+          ? dock
+          : linksEl.hidden
+            ? 'bottom'
+            : 'top'
+      el.dataset.side = side
       el.style.left = ''
       el.style.top = ''
       el.style.right = ''
+      el.style.bottom = ''
       el.style.transform = ''
+
+      if (settleLeft > 0) {
+        settleLeft -= 1
+        if (settleLeft === 0) reveal()
+      }
       return
     }
 
@@ -161,31 +218,30 @@ export function createFocusHelper(parent = document.getElementById('app')) {
     const right = toScreen(_rightWorld, camera)
 
     if (mid.behind) {
-      el.style.opacity = '0'
+      el.classList.remove('is-visible')
       return
     }
-    el.style.opacity = '1'
 
     const bubbleW = el.offsetWidth || 240
     const bubbleH = el.offsetHeight || 100
     const spaceRight = window.innerWidth - right.x
     const spaceLeft = left.x
-    const placeRight =
+    const preferRight =
       spaceRight >= spaceLeft && spaceRight > bubbleW + SIDE_GAP + EDGE_MARGIN
 
+    // Lock side after settle so equal-ish margins don't flip every frame
+    const side = lockedSide ?? (preferRight ? 'right' : 'left')
+
     let x
-    let side
-    if (placeRight) {
+    if (side === 'right') {
       x = right.x + SIDE_GAP
       x = Math.min(x, window.innerWidth - bubbleW - EDGE_MARGIN)
       x = Math.max(x, EDGE_MARGIN)
-      side = 'right'
       el.style.transform = 'translate(0, -50%)'
     } else {
       x = left.x - SIDE_GAP
       x = Math.max(x, bubbleW + EDGE_MARGIN)
       x = Math.min(x, window.innerWidth - EDGE_MARGIN)
-      side = 'left'
       el.style.transform = 'translate(-100%, -50%)'
     }
 
@@ -199,6 +255,14 @@ export function createFocusHelper(parent = document.getElementById('app')) {
     el.style.left = `${x}px`
     el.style.top = `${y}px`
     el.style.bottom = ''
+
+    if (settleLeft > 0) {
+      settleLeft -= 1
+      if (settleLeft === 0) {
+        lockedSide = side
+        reveal()
+      }
+    }
   }
 
   return { element: el, show, hide, update }

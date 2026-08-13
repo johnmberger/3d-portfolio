@@ -22,6 +22,7 @@ export function createIframeScreen({
   preloadDelayMs = 1600,
   iframeTitle = '',
   iframeAllow = '',
+  iframeScrolling = '',
   placeholderKicker = '',
   placeholderCopy = '',
   warmLoad = false,
@@ -37,6 +38,7 @@ export function createIframeScreen({
   element.style.backfaceVisibility = 'hidden'
 
   const allowAttr = iframeAllow ? ` allow="${iframeAllow}"` : ''
+  const scrollingAttr = iframeScrolling ? ` scrolling="${iframeScrolling}"` : ''
   element.innerHTML = `
     <div class="css3d-frame">
       <div class="css3d-viewport">
@@ -47,7 +49,7 @@ export function createIframeScreen({
         <iframe
           class="css3d-iframe"
           title="${iframeTitle}"
-          referrerpolicy="no-referrer-when-downgrade"${allowAttr}
+          referrerpolicy="no-referrer-when-downgrade"${allowAttr}${scrollingAttr}
         ></iframe>
       </div>
     </div>

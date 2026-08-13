@@ -676,18 +676,18 @@ body.is-pointer .css3d-layer {
 }
 
 /*
- * Earworms is a wide 1–4 column page. At 800px it goes 2-col and the now-playing
- * art sits off-center. Force a 1-col viewport and zoom the first album square.
- * Scale stays ≤ 2 so the crop cannot spill past the sleeve border.
+ * 1-col layout (width < 640px). Pin to top-left and pan to the first album
+ * square so the page isn't mid-scroll. Extra width + clipping hides the
+ * scrollbar gutter that was showing as a black bar.
  */
 .earworms-screen.is-loaded .css3d-iframe {
-  width: 400px;
-  height: 800px;
+  width: 420px;
+  height: 1200px;
   inset: auto;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%) translateY(3%) scale(2);
-  transform-origin: center center;
+  left: 0;
+  top: 0;
+  transform: translate(-16px, -220px) scale(2.174);
+  transform-origin: 0 0;
 }
 
 /* PoopyHooch (bathroom mirror) */

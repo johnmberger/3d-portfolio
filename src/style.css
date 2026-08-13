@@ -634,19 +634,15 @@ body.is-pointer .css3d-layer {
 .earworms-screen {
   width: 800px;
   height: 800px;
-  border-radius: 3px;
+  border-radius: 2px;
   background: #0c1018;
   color: #e8eef4;
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
-    inset 0 18px 40px rgba(0, 0, 0, 0.35),
-    inset 0 -10px 28px rgba(0, 0, 0, 0.22),
-    0 10px 28px rgba(0, 0, 0, 0.45),
-    0 2px 6px rgba(0, 0, 0, 0.35);
-  filter: drop-shadow(0 14px 18px rgba(0, 0, 0, 0.4));
+  /* No filter — CSS filters break CSS3D translate(-50%, -50%) centering */
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
 }
 
 .earworms-screen .css3d-viewport {
+  overflow: hidden;
   background: #0c1018;
 }
 
@@ -677,6 +673,21 @@ body.is-pointer .css3d-layer {
 
 .earworms-screen .css3d-iframe {
   background: #0c1018;
+}
+
+/*
+ * Earworms is a wide 1–4 column page. At 800px it goes 2-col and the now-playing
+ * art sits off-center on the sleeve. Force a 1-col viewport and zoom the first
+ * album square so it fills the record.
+ */
+.earworms-screen.is-loaded .css3d-iframe {
+  width: 400px;
+  height: 800px;
+  inset: auto;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) translateY(3%) scale(2.17);
+  transform-origin: center center;
 }
 
 /* PoopyHooch (bathroom mirror) */

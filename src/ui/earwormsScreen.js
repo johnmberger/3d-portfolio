@@ -8,8 +8,8 @@ const EARWORMS_URL = 'https://earworms.johnberger.dev'
 export { EARWORMS_URL }
 
 const SCREEN_PX = 800
-/** Slightly inset from the sleeve so the WebGL rim (and its shadows) stay visible. */
-const WORLD_SIZE = 0.376
+/** Full sleeve face — overlay must sit on the record, not inset. */
+const WORLD_SIZE = 0.4
 const PRELOAD_DELAY_MS = 1800
 
 export function createEarwormsScreen(turntable) {

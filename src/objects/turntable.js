@@ -329,7 +329,7 @@ function createUprightRecord() {
     metalness: 0,
   })
   const screen = markInteractive(
-    new THREE.Mesh(new THREE.PlaneGeometry(sleeveW * 0.94, sleeveH * 0.94), screenMat),
+    new THREE.Mesh(new THREE.PlaneGeometry(sleeveW, sleeveH), screenMat),
   )
   screen.position.set(0, 0, sleeveD / 2 + 0.002)
   screen.name = 'screen'

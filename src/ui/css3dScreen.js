@@ -65,14 +65,20 @@ export function createIframeScreen({
     if (persistOnHide || revealWhenReady) element.classList.add('is-loaded')
   })
 
-  const screen = parent.getObjectByName(screenName)
+  const host = attachTo ?? parent
+  const screen = host.getObjectByName(screenName) ?? parent.getObjectByName(screenName)
   screen.updateWorldMatrix?.(true, false)
   const object = new CSS3DObject(element)
   object.visible = false
-  object.position.copy(screen.position)
+  if (screen.parent === host) {
+    object.position.copy(screen.position)
+  } else {
+    screen.getWorldPosition(object.position)
+    host.worldToLocal(object.position)
+  }
   object.position.z += zOffset
   object.scale.set(worldWidth / widthPx, worldHeight / heightPx, 1)
-  ;(attachTo ?? parent).add(object)
+  host.add(object)
 
   function startLoad() {
     if (started) return

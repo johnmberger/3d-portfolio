@@ -8,19 +8,19 @@ const EARWORMS_URL = 'https://earworms.johnberger.dev'
 export { EARWORMS_URL }
 
 const SCREEN_PX = 800
-/** Full sleeve face — overlay must sit on the record, not inset. */
-const WORLD_SIZE = 0.4
 const PRELOAD_DELAY_MS = 1800
 
 export function createEarwormsScreen(turntable) {
   const upright = turntable.getObjectByName('uprightRecord')
+  const screen = upright.getObjectByName('screen')
+  const artSize = screen?.userData?.artSize ?? { width: 0.36, height: 0.36 }
   return createIframeScreen({
     className: 'earworms-screen',
     url: EARWORMS_URL,
     widthPx: SCREEN_PX,
     heightPx: SCREEN_PX,
-    worldWidth: WORLD_SIZE,
-    worldHeight: WORLD_SIZE,
+    worldWidth: artSize.width,
+    worldHeight: artSize.height,
     parent: turntable,
     attachTo: upright,
     preloadDelayMs: PRELOAD_DELAY_MS,

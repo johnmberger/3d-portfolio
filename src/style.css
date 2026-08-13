@@ -634,16 +634,16 @@ body.is-pointer .css3d-layer {
 .earworms-screen {
   width: 800px;
   height: 800px;
-  border-radius: 2px;
+  overflow: hidden;
+  border-radius: 1px;
   background: #0c1018;
   color: #e8eef4;
-  /* No filter — CSS filters break CSS3D translate(-50%, -50%) centering */
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
 }
 
 .earworms-screen .css3d-viewport {
   overflow: hidden;
   background: #0c1018;
+  clip-path: inset(0);
 }
 
 .earworms-screen .css3d-placeholder {
@@ -677,8 +677,8 @@ body.is-pointer .css3d-layer {
 
 /*
  * Earworms is a wide 1–4 column page. At 800px it goes 2-col and the now-playing
- * art sits off-center on the sleeve. Force a 1-col viewport and zoom the first
- * album square so it fills the record.
+ * art sits off-center. Force a 1-col viewport and zoom the first album square.
+ * Scale stays ≤ 2 so the crop cannot spill past the sleeve border.
  */
 .earworms-screen.is-loaded .css3d-iframe {
   width: 400px;
@@ -686,7 +686,7 @@ body.is-pointer .css3d-layer {
   inset: auto;
   left: 50%;
   top: 50%;
-  transform: translate(-50%, -50%) translateY(3%) scale(2.17);
+  transform: translate(-50%, -50%) translateY(3%) scale(2);
   transform-origin: center center;
 }
 

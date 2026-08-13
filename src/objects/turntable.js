@@ -328,11 +328,29 @@ function createUprightRecord() {
     roughness: 0.85,
     metalness: 0,
   })
-  const screen = markInteractive(
-    new THREE.Mesh(new THREE.PlaneGeometry(sleeveW, sleeveH), screenMat),
+  // Cardboard jacket around the art / iframe
+  const border = 0.02
+  const artW = sleeveW - border * 2
+  const artH = sleeveH - border * 2
+  const jacketMat = new THREE.MeshStandardMaterial({
+    color: 0xc8b49a,
+    roughness: 0.82,
+    metalness: 0.04,
+  })
+  const jacket = new THREE.Mesh(
+    new THREE.PlaneGeometry(sleeveW, sleeveH),
+    jacketMat,
   )
-  screen.position.set(0, 0, sleeveD / 2 + 0.002)
+  jacket.position.set(0, 0, sleeveD / 2 + 0.001)
+  jacket.receiveShadow = true
+  record.add(jacket)
+
+  const screen = markInteractive(
+    new THREE.Mesh(new THREE.PlaneGeometry(artW, artH), screenMat),
+  )
+  screen.position.set(0, 0, sleeveD / 2 + 0.003)
   screen.name = 'screen'
+  screen.userData.artSize = { width: artW, height: artH }
   screen.castShadow = true
   screen.receiveShadow = true
   record.add(screen)

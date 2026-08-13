@@ -643,7 +643,6 @@ body.is-pointer .css3d-layer {
 .earworms-screen .css3d-viewport {
   overflow: hidden;
   background: #0c1018;
-  clip-path: inset(0);
 }
 
 .earworms-screen .css3d-placeholder {
@@ -676,17 +675,17 @@ body.is-pointer .css3d-layer {
 }
 
 /*
- * 1-col layout (width < 640px). Pin to top-left and pan to the first album
- * square so the page isn't mid-scroll. Extra width + clipping hides the
- * scrollbar gutter that was showing as a black bar.
+ * Desktop layout shrunk onto the sleeve (xl = 4-col grid).
+ * 1280×1280 page → 800×800 well, so the site reads small instead of a
+ * cropped mobile view.
  */
 .earworms-screen.is-loaded .css3d-iframe {
-  width: 420px;
-  height: 1200px;
+  width: 1280px;
+  height: 1280px;
   inset: auto;
   left: 0;
   top: 0;
-  transform: translate(-16px, -220px) scale(2.174);
+  transform: scale(0.625);
   transform-origin: 0 0;
 }
 

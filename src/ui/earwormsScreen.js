@@ -26,7 +26,6 @@ export function createEarwormsScreen(turntable) {
     preloadDelayMs: PRELOAD_DELAY_MS,
     iframeTitle: 'Earworms',
     iframeAllow: 'autoplay; encrypted-media',
-    iframeScrolling: 'no',
     placeholderKicker: 'Earworms',
     placeholderCopy: 'Cueing up a record…',
     screenSize: { width: 0.4, height: 0.4, fill: 0.7 },

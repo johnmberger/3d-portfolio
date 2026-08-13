@@ -181,13 +181,13 @@ function createVase({
   return vase
 }
 
-function createFridge({ handle, kickMat }) {
+function createFridge({ handle, kickMat, width = 0.78, depth = 0.7, height = 1.92 }) {
   const fridge = new THREE.Group()
   fridge.name = 'fridge'
 
-  const fW = 0.78
-  const fH = 1.92
-  const fD = 0.7
+  const fW = width
+  const fH = height
+  const fD = depth
   const doorT = 0.048
   const gasket = mat(0x1a1c1e, { roughness: 0.9, metalness: 0.05 })
   const bodySteel = mat(0xb8bcc2, { metalness: 0.82, roughness: 0.22 })
@@ -506,13 +506,17 @@ export function createKitchenette({ underCabinetLights = true } = {}) {
   shortVase.position.set(upD * 0.48, cabinetTopY, cabD + 1.35)
   group.add(shortVase)
 
-  // —— Fridge beyond the side run ——
+  // —— Fridge beyond the side run (back flush with the cabinets, not through the wall) ——
+  const fridgeW = 0.78
+  const fridgeD = 0.7
   const fridge = createFridge({
     handle,
     kickMat,
+    width: fridgeW,
+    depth: fridgeD,
   })
   fridge.rotation.y = Math.PI / 2
-  fridge.position.set(0, 0, cabD + sideW + 0.41 + 0.04)
+  fridge.position.set(fridgeD / 2, 0, cabD + sideW + fridgeW / 2 + 0.04)
   group.add(fridge)
 
   // Tuck into the front-right corner

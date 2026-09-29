@@ -5,6 +5,7 @@ import { RESUME_URL } from '../src/resumeUrl.js'
 import { portfolio } from '../src/data/portfolio.js'
 import { CREDITS_ENTRIES } from '../src/objects/credits.js'
 import { EARWORMS_URL } from '../src/ui/earwormsScreen.js'
+import { VINYL_URL } from '../src/ui/vinylScreen.js'
 import { POOPYHOOCH_URL } from '../src/ui/poopyhoochScreen.js'
 
 const root = resolve(import.meta.dirname, '..')
@@ -18,8 +19,9 @@ describe('site URLs', () => {
     expect(RESUME_URL).toBe('https://resume.johnberger.dev/')
   })
 
-  it('exposes Earworms and Poop the Hooch URLs', () => {
+  it('exposes Earworms, Vinyl, and Poop the Hooch URLs', () => {
     expect(EARWORMS_URL).toMatch(/^https:\/\/earworms\.johnberger\.dev\/?$/)
+    expect(VINYL_URL).toMatch(/^https:\/\/vinyl\.johnberger\.dev\/?$/)
     expect(POOPYHOOCH_URL).toBe('https://www.poopthehooch.com')
   })
 })

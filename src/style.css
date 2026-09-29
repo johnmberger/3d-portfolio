@@ -617,6 +617,14 @@ body.is-focused #webgl {
   background: #0c1018;
 }
 
+.mobile-sheet--vinyl {
+  background: #161310;
+}
+
+.mobile-sheet--vinyl .mobile-sheet__iframe {
+  background: #161310;
+}
+
 .mobile-sheet--poopy {
   background: #14181c;
 }
@@ -680,6 +688,60 @@ body.is-pointer .css3d-layer {
  * cropped mobile view.
  */
 .earworms-screen.is-loaded .css3d-iframe {
+  width: 1280px;
+  height: 1280px;
+  inset: auto;
+  left: 0;
+  top: 0;
+  transform: scale(0.625);
+  transform-origin: 0 0;
+}
+
+/* Vinyl crate (pulled LP leaning on the crate) */
+.vinyl-screen {
+  width: 800px;
+  height: 800px;
+  overflow: hidden;
+  border-radius: 1px;
+  background: #161310;
+  color: #e8e0d4;
+}
+
+.vinyl-screen .css3d-viewport {
+  overflow: hidden;
+  background: #161310;
+}
+
+.vinyl-screen .css3d-placeholder {
+  gap: 10px;
+  background: linear-gradient(160deg, #2a2420 0%, #161310 50%, #3a3028 100%);
+}
+
+.vinyl-screen .css3d-placeholder::before {
+  content: "";
+  width: 42%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at center, #d8c8b0 0 16%, #1a1410 17% 22%, #0c0a08 23% 72%, #2a2622 73% 100%);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06);
+  margin-bottom: 8px;
+}
+
+.vinyl-screen .css3d-placeholder__kicker {
+  color: #d4c4b0;
+}
+
+.vinyl-screen .css3d-placeholder__copy {
+  font-size: 16px;
+  color: rgba(232, 224, 212, 0.55);
+}
+
+.vinyl-screen .css3d-iframe {
+  background: #161310;
+}
+
+.vinyl-screen.is-loaded .css3d-iframe {
   width: 1280px;
   height: 1280px;
   inset: auto;

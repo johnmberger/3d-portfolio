@@ -116,6 +116,198 @@ function createCuttingBoard({ boardMat, knifeMat, handleMat }) {
   return g
 }
 
+function addRoundedRect(path, cx, cy, w, d, r) {
+  const hw = w / 2
+  const hd = d / 2
+  const rr = Math.min(r, hw - 0.001, hd - 0.001)
+  const x0 = cx - hw
+  const y0 = cy - hd
+  const x1 = cx + hw
+  const y1 = cy + hd
+  path.moveTo(x0 + rr, y0)
+  path.lineTo(x1 - rr, y0)
+  path.quadraticCurveTo(x1, y0, x1, y0 + rr)
+  path.lineTo(x1, y1 - rr)
+  path.quadraticCurveTo(x1, y1, x1 - rr, y1)
+  path.lineTo(x0 + rr, y1)
+  path.quadraticCurveTo(x0, y1, x0, y1 - rr)
+  path.lineTo(x0, y0 + rr)
+  path.quadraticCurveTo(x0, y0, x0 + rr, y0)
+}
+
+/** Counter slab in XZ, thickness along +Y from the origin. Optional rounded-rect hole. */
+function makeCounterSlab(width, depth, thickness, material, hole) {
+  const hw = width / 2
+  const hd = depth / 2
+  const shape = new THREE.Shape()
+  shape.moveTo(-hw, -hd)
+  shape.lineTo(hw, -hd)
+  shape.lineTo(hw, hd)
+  shape.lineTo(-hw, hd)
+  shape.closePath()
+
+  if (hole) {
+    const path = new THREE.Path()
+    addRoundedRect(path, hole.x, -hole.z, hole.w, hole.d, hole.r)
+    shape.holes.push(path)
+  }
+
+  const geo = new THREE.ExtrudeGeometry(shape, {
+    depth: thickness,
+    bevelEnabled: false,
+    curveSegments: hole ? 16 : 1,
+  })
+  geo.rotateX(-Math.PI / 2)
+  geo.computeVertexNormals()
+  const mesh = new THREE.Mesh(geo, material)
+  mesh.castShadow = true
+  mesh.receiveShadow = true
+  return mesh
+}
+
+function makeRoundedRectSlab(w, d, thickness, radius, material) {
+  const shape = new THREE.Shape()
+  addRoundedRect(shape, 0, 0, w, d, radius)
+  const geo = new THREE.ExtrudeGeometry(shape, {
+    depth: thickness,
+    bevelEnabled: false,
+    curveSegments: 12,
+  })
+  geo.rotateX(-Math.PI / 2)
+  geo.computeVertexNormals()
+  const mesh = new THREE.Mesh(geo, material)
+  mesh.castShadow = true
+  mesh.receiveShadow = true
+  return mesh
+}
+
+/**
+ * Square undermount basin with rounded corners + one-piece gooseneck.
+ * Origin at the countertop; faucet toward −Z.
+ */
+function createKitchenSink({ steel, steelDark }) {
+  const sink = new THREE.Group()
+  sink.name = 'kitchenSink'
+
+  const chrome = mat(0xe6eaee, { metalness: 0.94, roughness: 0.1 })
+  const basinMat = mat(0xb4bcc4, {
+    metalness: 0.82,
+    roughness: 0.22,
+    side: THREE.DoubleSide,
+  })
+  const water = mat(0x6a8a9a, {
+    roughness: 0.05,
+    metalness: 0.1,
+    transparent: true,
+    opacity: 0.28,
+    depthWrite: false,
+  })
+
+  const innerW = 0.36
+  const innerD = 0.28
+  const cornerR = 0.055
+  const wall = 0.016
+  const basinH = 0.115
+
+  const wallShape = new THREE.Shape()
+  addRoundedRect(wallShape, 0, 0, innerW + wall * 2, innerD + wall * 2, cornerR + wall)
+  const wallHole = new THREE.Path()
+  addRoundedRect(wallHole, 0, 0, innerW, innerD, cornerR)
+  wallShape.holes.push(wallHole)
+  const wallGeo = new THREE.ExtrudeGeometry(wallShape, {
+    depth: basinH,
+    bevelEnabled: false,
+    curveSegments: 12,
+  })
+  wallGeo.rotateX(-Math.PI / 2)
+  wallGeo.computeVertexNormals()
+  const walls = new THREE.Mesh(wallGeo, basinMat)
+  walls.position.y = -basinH
+  walls.castShadow = true
+  walls.receiveShadow = true
+  sink.add(walls)
+
+  const floor = makeRoundedRectSlab(innerW - 0.01, innerD - 0.01, 0.01, cornerR - 0.008, basinMat)
+  floor.position.y = -basinH
+  sink.add(floor)
+
+  const poolShape = new THREE.Shape()
+  addRoundedRect(poolShape, 0, 0, innerW - 0.04, innerD - 0.04, Math.max(0.02, cornerR - 0.02))
+  const poolGeo = new THREE.ShapeGeometry(poolShape)
+  poolGeo.rotateX(-Math.PI / 2)
+  const pool = new THREE.Mesh(poolGeo, water)
+  pool.position.y = -basinH + 0.018
+  sink.add(pool)
+
+  const drain = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.016, 0.016, 0.006, 16),
+    steelDark,
+  )
+  drain.position.y = -basinH + 0.012
+  sink.add(drain)
+
+  const faucetZ = -(innerD / 2 + 0.045)
+  const deck = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.028, 0.032, 0.014, 20),
+    chrome,
+  )
+  deck.position.set(0, 0.007, faucetZ)
+  deck.castShadow = true
+  sink.add(deck)
+
+  const stem = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.013, 0.014, 0.028, 16),
+    chrome,
+  )
+  stem.position.set(0, 0.026, faucetZ)
+  sink.add(stem)
+
+  const neck = new THREE.CubicBezierCurve3(
+    new THREE.Vector3(0, 0.038, faucetZ),
+    new THREE.Vector3(0, 0.26, faucetZ),
+    new THREE.Vector3(0, 0.26, 0.04),
+    new THREE.Vector3(0, 0.1, 0.045),
+  )
+  const spoutGeo = new THREE.TubeGeometry(neck, 64, 0.0115, 14, false)
+  spoutGeo.computeVertexNormals()
+  const spout = new THREE.Mesh(spoutGeo, chrome)
+  spout.castShadow = true
+  sink.add(spout)
+
+  const startCap = new THREE.Mesh(new THREE.SphereGeometry(0.0115, 14, 10), chrome)
+  startCap.position.copy(neck.getPoint(0))
+  sink.add(startCap)
+
+  const aerator = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.013, 0.015, 0.018, 14),
+    chrome,
+  )
+  const tip = neck.getPoint(1)
+  const tipTan = neck.getTangent(1)
+  aerator.position.copy(tip)
+  aerator.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), tipTan.normalize())
+  aerator.castShadow = true
+  sink.add(aerator)
+
+  const leverHub = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.01, 0.01, 0.022, 12),
+    chrome,
+  )
+  leverHub.position.set(0.036, 0.028, faucetZ)
+  sink.add(leverHub)
+
+  const lever = new THREE.Mesh(
+    new THREE.CapsuleGeometry(0.006, 0.038, 4, 8),
+    chrome,
+  )
+  lever.rotation.x = Math.PI / 2.6
+  lever.position.set(0.036, 0.04, faucetZ + 0.018)
+  sink.add(lever)
+
+  sink.userData.opening = { w: innerW, d: innerD, r: cornerR }
+  return sink
+}
+
 /** Decorative ceramics for the top of the upper cabinets. */
 function createVase({
   color = 0xe8e0d4,
@@ -333,17 +525,54 @@ export function createKitchenette({ underCabinetLights = true } = {}) {
     doors = 2,
     withUppers = true,
     underCabinetLights = true,
+    sinkHole = null,
   }) {
     const run = new THREE.Group()
     run.position.set(x, 0, z)
     run.rotation.y = yaw
 
-    const base = box(width, cabH, cabD, wood)
-    base.position.set(0, cabH / 2, cabD / 2)
-    run.add(base)
+    if (sinkHole) {
+      const drop = 0.13
+      const pad = 0.03
+      const left = sinkHole.x - sinkHole.w / 2 - pad
+      const right = sinkHole.x + sinkHole.w / 2 + pad
+      const xMin = -width / 2
+      const xMax = width / 2
 
-    const top = box(width + 0.02, 0.035, cabD + 0.03, counterTop)
-    top.position.set(0, cabH + 0.018, cabD / 2 + 0.005)
+      const leftW = left - xMin
+      if (leftW > 0.05) {
+        const leftBase = box(leftW, cabH, cabD, wood)
+        leftBase.position.set(xMin + leftW / 2, cabH / 2, cabD / 2)
+        run.add(leftBase)
+      }
+      const rightW = xMax - right
+      if (rightW > 0.05) {
+        const rightBase = box(rightW, cabH, cabD, wood)
+        rightBase.position.set(right + rightW / 2, cabH / 2, cabD / 2)
+        run.add(rightBase)
+      }
+      const midW = Math.max(0.08, right - left)
+      const lowH = cabH - drop
+      const midBase = box(midW, lowH, cabD, wood)
+      midBase.position.set((left + right) / 2, lowH / 2, cabD / 2)
+      run.add(midBase)
+    } else {
+      const base = box(width, cabH, cabD, wood)
+      base.position.set(0, cabH / 2, cabD / 2)
+      run.add(base)
+    }
+
+    const topW = width + 0.02
+    const topD = cabD + 0.03
+    const topT = 0.035
+    let top
+    if (sinkHole) {
+      top = makeCounterSlab(topW, topD, topT, counterTop, sinkHole)
+      top.position.set(0, cabH, cabD / 2 + 0.005)
+    } else {
+      top = box(topW, topT, topD, counterTop)
+      top.position.set(0, cabH + topT / 2, cabD / 2 + 0.005)
+    }
     run.add(top)
 
     const kick = box(width - 0.04, 0.08, cabD - 0.05, kickMat)
@@ -450,13 +679,24 @@ export function createKitchenette({ underCabinetLights = true } = {}) {
 
   // Right wall run → toward the dining / side window
   const sideW = 1.9
+  const sinkAlong = 1.42
+  const sinkDepth = cabD * 0.52
+  const sideRunZ = cabD + sideW / 2
+  const sinkOpening = { w: 0.36, d: 0.28, r: 0.055 }
   addRun({
     x: 0,
-    z: cabD + sideW / 2,
+    z: sideRunZ,
     yaw: Math.PI / 2,
     width: sideW,
     doors: 3,
     underCabinetLights,
+    sinkHole: {
+      x: -(cabD + sinkAlong - sideRunZ),
+      z: sinkDepth - (cabD / 2 + 0.005),
+      w: sinkOpening.w + 0.012,
+      d: sinkOpening.d + 0.012,
+      r: sinkOpening.r + 0.004,
+    },
   })
 
   // —— Counter props ——
@@ -474,10 +714,15 @@ export function createKitchenette({ underCabinetLights = true } = {}) {
     knifeMat: knifeSteel,
     handleMat: knifeHandleMat,
   })
-  // Side run counter
-  board.position.set(cabD * 0.5, counterY, cabD + 0.85)
+  // Side run, near the corner — sink takes the rest of the counter
+  board.position.set(cabD * 0.5, counterY, cabD + 0.58)
   board.rotation.y = Math.PI / 2
   group.add(board)
+
+  const sink = createKitchenSink({ steel, steelDark })
+  sink.position.set(sinkDepth, counterY, cabD + sinkAlong)
+  sink.rotation.y = Math.PI / 2
+  group.add(sink)
 
   // Ceramics on top of the upper cabinets
   const cabinetTopY = upY + upH / 2 - 0.002

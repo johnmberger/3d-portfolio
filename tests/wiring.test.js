@@ -20,6 +20,7 @@ describe('entry wiring', () => {
     for (const kind of [
       'monitor',
       'turntable',
+      'vinylRack',
       'bathroom',
       'credits',
       'about',

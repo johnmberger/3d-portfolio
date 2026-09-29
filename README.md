@@ -10,6 +10,7 @@ An interactive 3D portfolio — a walkable loft inspired by my Atlanta apartment
 |--------|--------|
 | **Monitor** | Résumé ([resume.johnberger.dev](https://resume.johnberger.dev/)) |
 | **Turntable** | [Earworms](https://earworms.johnberger.dev) — what I've been listening to |
+| **Vinyl crate** | [Vinyl](https://vinyl.johnberger.dev) — the collection |
 | **Bathroom mirror** | [Poop the Hooch](https://www.poopthehooch.com) — is the Chattahoochee poopy? |
 | **Dining menu** | About me |
 | **TV** | A local-news explainer for this site |

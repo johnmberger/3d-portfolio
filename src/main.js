@@ -9,6 +9,7 @@ import { createBicycle } from './objects/bicycle.js'
 import { createMonitor, updateMonitor } from './objects/monitor.js'
 import { createDiningTable } from './objects/dining.js'
 import { createTurntable, updateTurntable } from './objects/turntable.js'
+import { createVinylRack } from './objects/vinylRack.js'
 import { createFloorLamp, updateFloorLamp, createHangingPendant, updateHangingPendant } from './objects/lamp.js'
 import { createLightSwitch, updateLightSwitch } from './objects/lightSwitch.js'
 import { createRug } from './objects/rug.js'
@@ -40,6 +41,12 @@ import {
   updateEarwormsVisibility,
   EARWORMS_URL,
 } from './ui/earwormsScreen.js'
+import {
+  createVinylScreen,
+  createMobileVinylSheet,
+  updateVinylVisibility,
+  VINYL_URL,
+} from './ui/vinylScreen.js'
 import {
   createPoopyHoochScreen,
   createMobilePoopyHoochSheet,
@@ -164,6 +171,7 @@ const {
 const monitor = createMonitor()
 const { group: dining, ready: diningReady } = createDiningTable()
 const turntable = createTurntable()
+const vinylRack = createVinylRack()
 // Front-right corner of the lounge rug (open end of the sectional), aimed at the TV
 const lamp = createFloorLamp({
   position: [-0.88, 0, 0.78],
@@ -208,6 +216,7 @@ scene.add(
   monitor,
   dining,
   turntable,
+  vinylRack,
   lamp,
   plantPendant,
   lightSwitch,
@@ -257,8 +266,10 @@ const TV_TICKER_NEAR = 4.2
 const portfolioUi = createPortfolioScreen(monitor)
 const mobileResumeSheet = isTouchExplore ? createMobileResumeSheet(app) : null
 const mobileEarwormsSheet = isTouchExplore ? createMobileEarwormsSheet(app) : null
+const mobileVinylSheet = isTouchExplore ? createMobileVinylSheet(app) : null
 const mobilePoopySheet = isTouchExplore ? createMobilePoopyHoochSheet(app) : null
 const earwormsUi = createEarwormsScreen(turntable)
+const vinylUi = createVinylScreen(vinylRack)
 const poopyUi = createPoopyHoochScreen(bathroom)
 const tvNewsUi = createTvNewsScreen(tv, { lowRes: isMobile })
 const focusHelper = createFocusHelper(app)
@@ -268,6 +279,7 @@ const cameraBounds = createCameraBounds(camera, controls)
 
 const monitorScreen = monitor.getObjectByName('screen')
 const earwormsScreen = turntable.getObjectByName('screen')
+const vinylScreen = vinylRack.getObjectByName('screen')
 const bathroomScreen = bathroom.getObjectByName('screen')
 const creditsScreen = creditsPlaque.getObjectByName('screen')
 const aboutScreen = dining.getObjectByName('screen')
@@ -283,6 +295,7 @@ const hoverHighlight = createHoverHighlight()
 const interactiveRoots = {
   monitor,
   turntable,
+  vinylRack,
   bathroom,
   credits: creditsPlaque,
   about: dining,
@@ -380,6 +393,7 @@ function endFocusUi() {
   pendingCloseFocus = false
   setScreenInteractive(portfolioUi, false)
   setScreenInteractive(earwormsUi, false)
+  setScreenInteractive(vinylUi, false)
   setScreenInteractive(poopyUi, false)
   setFocusedUi(false)
   clearFocusChrome()
@@ -390,6 +404,10 @@ function endFocusUi() {
   if (activeFocus === 'earworms') {
     earwormsUi.hide()
     mobileEarwormsSheet?.hide()
+  }
+  if (activeFocus === 'vinyl') {
+    vinylUi.hide()
+    mobileVinylSheet?.hide()
   }
   if (activeFocus === 'poopyhooch') {
     poopyUi.hide()
@@ -449,6 +467,23 @@ function focusEarworms() {
       width: earwormsUi.screenSize.width,
     },
     hint: 'Dropping the needle…',
+  })
+}
+
+function focusVinyl() {
+  beginFocus({
+    id: 'vinyl',
+    screen: vinylScreen,
+    size: vinylUi.screenSize,
+    ui: mobileVinylSheet ? null : vinylUi,
+    helper: {
+      title: 'Vinyl',
+      blurb: 'The records on my shelf.',
+      href: VINYL_URL,
+      anchor: vinylScreen,
+      width: vinylUi.screenSize.width,
+    },
+    hint: 'Pulling a record…',
   })
 }
 
@@ -536,6 +571,7 @@ function focusTvNews() {
 const FOCUS_BY_KIND = {
   monitor: focusPortfolio,
   turntable: focusEarworms,
+  vinylRack: focusVinyl,
   bathroom: focusPoopyHooch,
   credits: focusCredits,
   about: focusAbout,
@@ -572,6 +608,9 @@ function handleFocusModeTransition(mode) {
       } else if (activeFocus === 'earworms') {
         mobileEarwormsSheet?.show()
         if (!mobileEarwormsSheet) setScreenInteractive(earwormsUi, true)
+      } else if (activeFocus === 'vinyl') {
+        mobileVinylSheet?.show()
+        if (!mobileVinylSheet) setScreenInteractive(vinylUi, true)
       } else if (activeFocus === 'poopyhooch') {
         mobilePoopySheet?.show()
         if (!mobilePoopySheet) setScreenInteractive(poopyUi, true)
@@ -583,11 +622,13 @@ function handleFocusModeTransition(mode) {
   } else if (mode === 'explore') {
     setScreenInteractive(portfolioUi, false)
     setScreenInteractive(earwormsUi, false)
+    setScreenInteractive(vinylUi, false)
     setScreenInteractive(poopyUi, false)
     setFocusedUi(false)
     clearFocusChrome()
     mobileResumeSheet?.hide()
     mobileEarwormsSheet?.hide()
+    mobileVinylSheet?.hide()
     mobilePoopySheet?.hide()
     setHint(EXPLORE_HINT)
     pendingCloseFocus = false
@@ -768,6 +809,9 @@ function tick(timestamp) {
   updateEarwormsVisibility(earwormsUi, camera, earwormsScreen, {
     active: rig.isFocused && activeFocus === 'earworms' && !mobileEarwormsSheet,
   })
+  updateVinylVisibility(vinylUi, camera, vinylScreen, {
+    active: rig.isFocused && activeFocus === 'vinyl' && !mobileVinylSheet,
+  })
   updatePoopyHoochVisibility(poopyUi, camera, bathroomScreen, {
     active: rig.isFocused && activeFocus === 'poopyhooch' && !mobilePoopySheet,
   })
@@ -783,6 +827,7 @@ function tick(timestamp) {
     mode !== 'explore' ||
     portfolioUi.object.visible ||
     earwormsUi.object.visible ||
+    vinylUi.object.visible ||
     poopyUi.object.visible
   ) {
     cssRenderer.render(scene, camera)
@@ -796,6 +841,7 @@ function tick(timestamp) {
       portfolioUi.preload()
       if (!isTouchExplore) {
         earwormsUi.preload()
+        vinylUi.preload()
         poopyUi.preload()
       }
       startBikeLoad()

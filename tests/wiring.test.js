@@ -11,12 +11,14 @@ describe('entry wiring', () => {
     expect(main).toMatch(/\binject\s*\(/)
   })
 
-  it('wires the interactive hotspots in main', () => {
+  it('wires the interactive hotspots', () => {
     const main = readFileSync(resolve(root, 'src/main.js'), 'utf8')
-    expect(main).toContain('FOCUS_BY_KIND')
-    expect(main).toContain('focusTvNews')
-    expect(main).toContain('beginFocus')
+    const focus = readFileSync(resolve(root, 'src/interaction/focusSession.js'), 'utf8')
     expect(main).toContain('createMobileResumeSheet')
+    expect(main).toContain('createFocusSession')
+    expect(focus).toContain('FOCUS_BY_KIND')
+    expect(focus).toContain('focusTvNews')
+    expect(focus).toContain('beginFocus')
     for (const kind of [
       'monitor',
       'turntable',
@@ -29,7 +31,7 @@ describe('entry wiring', () => {
       'tv',
       'lightSwitch',
     ]) {
-      expect(main).toMatch(new RegExp(`\\b${kind}\\b`))
+      expect(focus).toMatch(new RegExp(`\\b${kind}\\b`))
     }
   })
 
